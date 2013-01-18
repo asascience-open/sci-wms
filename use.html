@@ -66,6 +66,38 @@
 <p>There is an openlayers webmap page built into sci-wms for quickly testing the getMap request and styles. All of the datasets that are added to your sci-wms should show up in the layer selection widget. If you didn't fill out the optional test variable, style, and date when you added the dataset then it won't work here. You can always go back into the admin and add the optional parameters required for the test page to work.</p>
       
 <h2>The STYLES Parameter</h2>
+<p>STYLES=position1_position2_position3_position4_position5_position6_position7</p>
+<p>Position 1</p><p>
+This is the style of image to return.
+For node variables the options are: pcolor, facets, contours, filledcontours, (vectors or barbs if specifying two variables like LAYERS=u,v)
+</p><p>
+For cell variables the options are: pcolor, facets, contours, filledcontours, (vectors or barbs if specifying two variables like LAYERS=u,v)
+</p>
+<p>Position 2</p>
+<p>
+This is the type of processing to do if the request has a time range specified instead of one time. (Probably won’t be needed for this project, but) The options are either: average or maximum
+</p><p>
+<p>Position 3</p><p>
+This is the colormap to be used. Case-sensitive match to the matplotlib default colormaps. Possible values can be found here: http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+</p><p>
+To use colormaps that contain an underscore ( “_” ) substitute the underscore for a hyphen ( “-”) in the styles parameter.
+</p>
+<p>Position 4</p><p>
+For the color scaling, this value is the lower limit or “cmin”, should be entered as an integer or decimal number. If either cmin or cmax are listed as None then the colormap will autoscale to the available data.
+</p>
+<p>Position 5</p><p>
+For color scaling, this value is the upper limit, or “cmax”, should be entered as an integer or decimal number. If either cmin or cmax are listed as None then the colormap will autoscale to the available data.
+</p>
+<p>Position 6</p><p>
+This value specifies whether the variable input in LAYERS parameter is in the middle of an unstructured cell or if it is on the node/vertex. Allowable values in this position are either: cell or node
+</p>
+<p>Position 7</p><p>
+This is a case-sensitive boolean to say whether or not the absolute value (magnitude) or the actual value should be taken if only one variable is specified in LAYERS=
+</p><p>
+For instance LAYERS=u will return positive and negative values if the value in Position 7 is set to False, but if it set to True, the magnitude of u will be returned.
+</p><p>
+Allowable values: True or False
+(in the case of vectors, True = autoscaling of vectors, False means no autoscaling of vectors with default scale) If there is a number in this position, the number is taken as the scale. Start with 2 and adjust from there.</p>
       </section>
 <!--end page content-->
 
