@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Sci-wms by acrosby</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Sci-wms</h1>
+        <p>Sci-wms: A Python WMS service for geospatial gridded data</p>
+
+        <p class="view"><a href="https://github.com/acrosby/sci-wms">View the Project on GitHub <small>acrosby/sci-wms</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/acrosby/sci-wms/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/acrosby/sci-wms/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/acrosby/sci-wms">View On <strong>GitHub</strong></a></li>
+        </ul>
+      
+      <p class="view"><a href="http://acrosby.github.com/sci-wms/index.html">Install sci-wms and required dependencies</a><br>
+      
+      <a href="http://acrosby.github.com/sci-wms/run.html">Start the sci-wms service</a><br>
+      
+      <a href="http://acrosby.github.com/sci-wms/setup.html">Learn how to setup the sci-wms service</a><br>
+      
+      <a href="http://acrosby.github.com/sci-wms/configure.html">Learn how to configure new datasets</a><br>
+      <a href="http://acrosby.github.com/sci-wms/use.html">Making requests and customizing styles</a></p>
+      
+      </header>
+      
+      
+      
+<!--page content starts here -->      
+      <section>
+ <!--       <h1>sci-wms</h1>
+
+<h4>A Python WMS service for geospatial gridded data</h4>
+-->
+
+<h2>Adding datasets to the server</h2>
+<h4>Administration Site</h4>
+<pre><code>http://server:port/admin</code></pre>
+<p>In order to add and remove datasets users must log in to the sci-wms admin page. This site allows administrators to create and remove users, update passwords, add server/service level metadata that will show up in getCapabilities documents, and configure datasets.</p>
+
+<p>The default username is: sciwmsuser</p>
+
+<p>The default password is: sciwmspassword</p>
+
+<p>At the very least, the default sciwmsuser password should be changed when users first log in while setting up the new server.</p>
+
+<p>Depending on the version of Django you have installed you may have a problem
+logging into the admin site, even with the correct password. An easy way solve this problem is to
+simply to run the following command to reset the sciwmsuser password from the command line.<p>
+
+<pre><code>python manage.py changepassword sciwmsuser</code></pre>
+
+<h4>Adding a new dataset</h4>
+<p>Select the Datasets link from the main admin page. Choose to add a new dataset. Fill in the required fields. The name will be a unique dataset id. The path can either be a local file path or a valid OpenDAP link (provided that opendap is enabled in the netcdf lib). Title and abstract parameters are used as human readable metadata available in the getCapabilities document for the dataset.</p>
+<p>Choose if sci-wms should check for updates to the source dataset periodically (like in the case of a forecast aggreation).</p>
+<p>The optional parameters are only required if you would like to be able to quickly test the getMap services in the embeded openlayers test page.</p>
+<p>Once the required fields have been populated, it is important to select save. This ensures that the changes you have made will be pushed into the sci-wms database.</p> 
+
+      </section>
+<!--end page content-->
+
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/acrosby">acrosby</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
