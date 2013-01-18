@@ -50,7 +50,7 @@
 <h2>Using the WMS services</h2>
 <h4>Server Index</h4>
 <p>A list of the datasets you have added to sci-wms are available at the root url of your sci-wms server. This page lists the unique dataset ID's, path to netcdf file (or OpenDAP endpoint), and whether or not the server will be updating the available data going forward (as you would for a forecast collection).</p>
-<p>If your datasets are local netcdf files, the full path will be listed on this page. If this path is sensitive information in someway, then this is a problem. We are working to come up with a solution to this problem.</p>
+<p>If your datasets are local netcdf files, the full path will be listed on this page. If this path is sensitive information in someway, then this is a problem. We are working to come up with a good solution.</p>
 <h4>getCapabilities</h4>
 <p>http://server:port/wms/your_unique_datasetid/?request=getCapabilities</p>
 <h4>getMap</h4>
@@ -60,6 +60,12 @@
 <p>http://server:port/wms/your_unique_datasetid/?request=getFeatureInfo&...</p>
 <h4>getLegendGraphic</h4>
 <p>http://server:port/wms/your_unique_datasetid/?request=getLegendGraphic&...</p>
+
+<h2>Quickly testing getMap requests</h2>
+<p>http://server:port/wmstest</p>
+<p>There is an openlayers webmap page built into sci-wms for quickly testing the getMap request and styles. All of the datasets that are added to your sci-wms should show up in the layer selection widget. If you didn't fill out the optional test variable, style, and date when you added the dataset then it won't work here. You can always go back into the admin and add the optional parameters required for the test page to work.</p>
+      
+<h2>The STYLES Parameter</h2>
       </section>
 <!--end page content-->
 
