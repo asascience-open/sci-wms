@@ -30,7 +30,7 @@
       <section>
         <h1>sci-wms</h1>
 
-<h4>A Python WMS service for geospatial gridded data (Only unstructured FVCOM and ADCIRC grids and structured grids officially supported)</h4>
+<h4>A Python WMS service for geospatial gridded data</h4>
 
 <p><img src="https://raw.github.com/acrosby/sci-wms/master/src/pywms/wms/static/example1.png" alt="Global HYCOM as filled contours"></p>
 
@@ -40,30 +40,57 @@
 <li>&gt;= 4GB RAM But it depends directly on the size and extents of the datasets you will be visualizing.</li>
 <li>&gt; 2 CPU (&gt; 4 CPU Better) </li>
 <li>Python &gt; Version 2.6</li>
-</ul><h2>Roadmap</h2>
+</ul><h2>Install</h2>
 
-<h4>Version 1:</h4>
+<p>Download the compressed project and unpack anywhere. This is where the installation will live.</p>
 
-<ul>
-<li>Bug free working implementation of the current dev code</li>
-<li>working getcaps</li>
-<li>working getmap</li>
-<li>working getlegendgraphic for non-autoscaling colormap styles</li>
-<li>service based dataset initialization and updating in addition to admin</li>
-<li>support for native Adcirc and FVCOM model output meshes</li>
-</ul><h4>Version 1.1:</h4>
+<h4>If you have the standard enthought python distribution (epd):</h4>
 
-<ul>
-<li>Support for rectilinear and curvilinear grids</li>
-<li>some wps functionality</li>
-<li>projections other than web mercator</li>
-<li>working getlegendgraphic response for the autoscaling colormap styles</li>
-<li>server-wide symbolization customization in admin</li>
-</ul><h4>Experimental Fork/Branch:</h4>
+<p>Install the remaining dependencies:</p>
+
+<pre><code>$easy_install gunicorn
+$easy_install greenlet
+$easy_install gevent              # or easy_install eventlet
+$easy_install django
+</code></pre>
+
+<h4>If are not using the enthought python distribution:</h4>
+
+<p>You must have the following python packages installed:</p>
 
 <ul>
-<li>Leverage hardware/opengl rendering for high overhead styles (facets, arrows...)</li>
-</ul>
+<li>django</li>
+<li>gunicorn</li>
+<li>greenlet</li>
+<li>gevent or eventlet</li>
+<li>numpy</li>
+<li>matplotlib (1.1.0 preferred)</li>
+<li>matplotlib basemap (versions 1.0.1)</li>
+<li>netCDF4 (Install from the netcdf4-python google code repository if using HDF a recent build of HDF5)</li>
+<li>shapely</li>
+<li>markdown</li>
+</ul><p>sci-wms works with both pip and virtualenv quite happily. If you
+have pip installed you can use the following to install many (but not all) of the required modules:</p>
+
+<pre><code>$pip install package
+</code></pre>
+
+
+
+<p>Similarly if you have setup_tools installed you can use:</p>
+
+<pre><code>$easy_install package
+</code></pre>
+
+<p>If you are using virtualenv, just make sure you have the environment
+activated before you try to install the packages or point to the environment
+with pip on the install command.</p>
+
+<p>You also need to ensure that you have basemap matplotlib toolkit installed:</p>
+
+<pre><code>$wget -o basemap-1.0.1.tar.gz http://sourceforge.net/projects/matplotlib/files/matplotlib-toolkits/basemap-1.0.1/basemap-1.0.1.tar.gz/download
+$pip install basemap-1.0.1.tar.gz
+</code></pre>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/acrosby">acrosby</a></p>
