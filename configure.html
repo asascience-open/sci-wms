@@ -65,8 +65,8 @@ simply to run the following command to reset the sciwmsuser password from the co
 <pre><code>python manage.py changepassword sciwmsuser</code></pre>
 
 <h4>Adding a new dataset</h4>
-<p>Select the Datasets link from the main admin page. Choose to add a new dataset. Fill in the required fields. The name will be a unique dataset id. The path can either be a local file path or a valid OpenDAP link (provided that opendap is enabled in the netcdf lib). Title and abstract parameters are used as human readable metadata available in the getCapabilities document for the dataset.</p>
-<p>Choose if sci-wms should check for updates to the source dataset periodically (like in the case of a forecast aggreation).</p>
+<p>Select the Datasets link from the main admin page. Choose the add new dataset option. Fill in the required fields. The name will be a unique dataset id. The path can either be a local file path or a valid OpenDAP link (provided that opendap is enabled in the netcdf lib). Title and abstract parameters are used as human readable metadata available in the getCapabilities document for the dataset.</p>
+<p>Enable automatic updating if sci-wms should check for updates to the source dataset periodically (like in the case of a forecast aggreation).</p>
 <p>The optional parameters are only required if you would like to be able to quickly test the getMap services in the embeded openlayers test page.</p>
 <p>Once the required fields have been populated, it is important to select save. This ensures that the changes you have made will be pushed into the sci-wms database.</p> 
 
