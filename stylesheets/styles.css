@@ -100,7 +100,7 @@ header {
   float:left;
   position:fixed;
   background-image:url('header_vectors2.png');
-  background-position: right top;
+  background-position: center;
   background-repeat: no-repeat;
 }
 
