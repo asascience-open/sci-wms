@@ -101,6 +101,7 @@ header {
   position:fixed;
   background-image:url('header_vectors.png');
   background-position: center;
+  background-repeat: no-repeat;
 }
 
 header ul {
@@ -161,6 +162,10 @@ header ul a strong {
   color:#222;
 }
 
+header p a {
+  background-color: #FFFFFF;
+}
+
 section {
   width:500px;
   float:right;
@@ -211,10 +216,6 @@ footer {
   
   header a small {
     display:inline;
-  }
-  
-  header p a {
-    background-color: #FFFFFF;
   }
   
   header ul {
