@@ -100,6 +100,7 @@ header {
   float:left;
   position:fixed;
   background-image:url('header_vectors.png');
+  background-position: center;
 }
 
 header ul {
