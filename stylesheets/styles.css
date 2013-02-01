@@ -213,6 +213,10 @@ footer {
     display:inline;
   }
   
+  header a {
+    background-color: #FFFFFF;
+  }
+  
   header ul {
     position:absolute;
     right:50px;
