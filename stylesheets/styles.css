@@ -162,7 +162,11 @@ header ul a strong {
   color:#222;
 }
 
-header p {
+header p a {
+  background-color: #FFFFFF;
+}
+
+header p a small{
   background-color: #FFFFFF;
 }
 
