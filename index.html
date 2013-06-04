@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>SCI-WMS by acrosby</title>
+    <title>Sci-wms by acrosby</title>
 
-    <link rel="stylesheet" href="/sci-wms/stylesheets/styles.css">
-    <link rel="stylesheet" href="/sci-wms/stylesheets/pygment_trac.css">
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
@@ -15,8 +15,8 @@
   <body>
     <div class="wrapper">
       <header>
-        <h1>SCI-WMS</h1>
-        <p>A Python WMS service for geospatial gridded data</p>
+        <h1>Sci-wms</h1>
+        <p>Sci-wms: A Python WMS service for geospatial gridded data (Only unstructured FVCOM and ADCIRC grids logically rectangular grids supported)</p>
 
         <p class="view"><a href="https://github.com/acrosby/sci-wms">View the Project on GitHub <small>acrosby/sci-wms</small></a></p>
 
@@ -26,93 +26,118 @@
           <li><a href="https://github.com/acrosby/sci-wms/tarball/master">Download <strong>TAR Ball</strong></a></li>
           <li><a href="https://github.com/acrosby/sci-wms">View On <strong>GitHub</strong></a></li>
         </ul>
-      
-      <p class="view"><a href="http://acrosby.github.io/sci-wms/index.html">Install sci-wms and required dependencies</a><br>
-      
-      <a href="http://acrosby.github.io/sci-wms/run.html">Start the sci-wms service</a><br>
-      
-      <a href="http://acrosby.github.io/sci-wms/setup.html">Learn how to setup the sci-wms service</a><br>
-      
-      <a href="http://acrosby.github.io/sci-wms/configure.html">Learn how to configure new datasets</a><br>
-      <a href="http://acrosby.github.io/sci-wms/use.html">Making requests and customizing styles</a></p>
-            <a href="http://ec2-107-21-136-52.compute-1.amazonaws.com:8080/mymaracoos/wmstest">See it in action</a><br><a href="/sci-wms/support.html">Acknowledgements and Support</a></p>
-      <br><br><br>
       </header>
-      
       <section>
-        <!--<h1>sci-wms</h1>
+        <h1>
+<a name="sci-wms" class="anchor" href="#sci-wms"><span class="octicon octicon-link"></span></a>sci-wms</h1>
 
-<h4>A Python WMS service for geospatial gridded data</h4>
--->
-<p><img src="https://raw.github.com/acrosby/sci-wms/master/src/pywms/wms/static/example1.png" alt="Global HYCOM as filled contours"></p>
-<h2>System Requirements</h2>
+<p>COPYRIGHT 2010 Alexander Crosby</p>
+
+<h4>
+<a name="a-python-wms-service-for-geospatial-gridded-data" class="anchor" href="#a-python-wms-service-for-geospatial-gridded-data"><span class="octicon octicon-link"></span></a>A Python WMS service for geospatial gridded data</h4>
+
+<h2>
+<a name="system-requirements" class="anchor" href="#system-requirements"><span class="octicon octicon-link"></span></a>System Requirements</h2>
 
 <ul>
 <li>&gt;= 4GB RAM But it depends directly on the size and extents of the datasets you will be visualizing.</li>
 <li>&gt; 2 CPU (&gt; 4 CPU Better) </li>
-<li>Python &gt; Version 2.6</li>
-<li>LibGeos (http://download.osgeo.org/geos/)</li>
-<li>LibSpatialIndex (http://libspatialindex.github.com)</li>
+<li>Python 2.7.x with sqlite</li>
+<li>LibGeos (<a href="http://download.osgeo.org/geos/">http://download.osgeo.org/geos/</a>)</li>
+<li>LibSpatialIndex (<a href="http://libspatialindex.github.com">http://libspatialindex.github.com</a>)</li>
 <li>netCDF4 C library (with opendap enabled, if opendap/remote functionality is desired)</li>
 <li>libhdf5 C library (dependency of netCDF4)</li>
-</ul><h2>Install</h2>
-
-<p>Download the compressed project and unpack anywhere. This is where the installation will live.</p>
-
-<h4>If you have the standard enthought python distribution (epd):</h4>
-
-<p>Install the remaining dependencies:</p>
-
-<pre><code>$easy_install gunicorn
-$easy_install greenlet
-$easy_install gevent              # or easy_install eventlet
-$easy_install django
-</code></pre>
-
-<h4>If are not using the enthought python distribution:</h4>
-
-<p>You must have the following python packages installed:</p>
+<li>libcurl (required for opendap)</li>
+</ul><p>Your system may have already installed the following dependencies, but 
+they are required by some of the module dependencies installed in the next section.</p>
 
 <ul>
-<li>django</li>
-<li>gunicorn</li>
-<li>greenlet</li>
-<li>gevent or eventlet</li>
-<li>numpy</li>
-<li>matplotlib (>= 1.2.0)</li>
-<li>matplotlib basemap (>= 1.0.6)</li>
-<li>netCDF4 (Install from the netcdf4-python google code repository if using HDF a recent build of HDF5)</li>
-<li>shapely</li>
-<li>rtree</li>
-</ul><p>sci-wms works with both pip and virtualenv quite happily. If you
-have pip installed you can use the following to install many (but not all) of the required modules:</p>
+<li>libpng</li>
+<li>libfreetype</li>
+<li>libjpeg</li>
+<li>libevent</li>
+</ul><h2>
+<a name="community" class="anchor" href="#community"><span class="octicon octicon-link"></span></a>Community</h2>
 
-<pre><code>$pip install package
-</code></pre>
+<p><a href="https://groups.google.com/forum/?fromgroups#!forum/sci-wms">We have started a Google Group for the sci-wms project located here.</a></p>
 
+<h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
 
+<p><a href="http://acrosby.github.com/sci-wms">Download the compressed project and unpack anywhere.</a> This is where the installation will live.</p>
 
-<p>Similarly if you have setup_tools installed you can use:</p>
-
-<pre><code>$easy_install package
-</code></pre>
-
-<p>If you are using virtualenv, just make sure you have the environment
+<p>Install the following Python dependencies using <code>pip</code>, <code>easy_install</code>, or equivalent. 
+If you are using <a href="http://www.virtualenv.org/en/latest/">virtualenv</a>, just make 
+sure you have the environment
 activated before you try to install the packages or point to the environment
 with pip on the install command.</p>
 
-<p>You also need to ensure that you have basemap matplotlib toolkit installed:</p>
+<div class="highlight"><pre>pip install numpy
+pip install django&gt;<span class="o">=</span>1.4
+pip install gunicorn
+pip install gevent
+pip install matplotlib&gt;<span class="o">=</span>1.2.0
+pip install netCDF4
+pip install shapely
+pip install rtree
+</pre></div>
 
-<pre><code>$wget http://sourceforge.net/projects/matplotlib/files/matplotlib-toolkits/basemap-1.0.6/basemap-1.0.6.tar.gz
-$pip install basemap-1.0.6.tar.gz
-</code></pre>
+<p>You also need to ensure that you have basemap matplotlib toolkit installed, 
+which isn't available from pypi.</p>
+
+<div class="highlight"><pre>wget http://sourceforge.net/projects/matplotlib/files/matplotlib-toolkits/basemap-1.0.6/basemap-1.0.6.tar.gz
+pip install basemap-1.0.6.tar.gz
+</pre></div>
+
+<p>If your version of the HDF5 C libraries is &gt;=1.8.10, you may have to install 
+the netCDF4 Python module from the source repository in order for it to work properly. 
+This requires an SVN client to be installed on your system. (Please let us know if 
+you have problems importing netCDF4 in Python after running this command.)</p>
+
+<div class="highlight"><pre>pip install -e svn+http://netcdf4-python.googlecode.com/svn/trunk#egg<span class="o">=</span>netCDF4
+</pre></div>
+
+<p>If your NetCDF4 and HDF5 libraries are in non-typical locations, you will need to pass the locations to the <code>pip</code> command:</p>
+
+<div class="highlight"><pre><span class="nv">NETCDF4_DIR</span><span class="o">=</span>path <span class="nv">HDF5_DIR</span><span class="o">=</span>path pip install netCDF4
+</pre></div>
+
+<p>If there is problem with gevent or greenlet, or if you would like gunicorn 
+to use an alternative worker, you can install the <code>eventlet</code> worker. With some configuration 
+of the sci-wms gunicorn configuration files,  you can also use <code>tornado</code> workers.</p>
+
+<div class="highlight"><pre>pip install eventlet
+pip install tornado
+</pre></div>
+
+<h2>
+<a name="test" class="anchor" href="#test"><span class="octicon octicon-link"></span></a>Test</h2>
+
+<p>To make sure that dependencies have been installed correctly, and that sci-wms is fully functional. 
+Run the following command to run the tests.</p>
+
+<div class="highlight"><pre><span class="nb">cd </span>sci-wms/src/pywms <span class="o">&amp;&amp;</span> python manage.py <span class="nb">test</span>
+</pre></div>
+
+<h2>
+<a name="start-the-services" class="anchor" href="#start-the-services"><span class="octicon octicon-link"></span></a>Start the services</h2>
+
+<p>You can start the services on port 7000 from the command line by using the following commands. <a href="http://gunicorn.org/">Learn about gunicorn wsgi server configuration by clicking here.</a></p>
+
+<div class="highlight"><pre><span class="nb">cd </span>sci-wms/src/pywms <span class="o">&amp;&amp;</span> gunicorn_django -c config_public.py
+</pre></div>
+
+<h2>
+<a name="caveats" class="anchor" href="#caveats"><span class="octicon octicon-link"></span></a>Caveats:</h2>
+
+<p>Look at <a href="https://github.com/acrosby/sci-wms/issues?state=open">https://github.com/acrosby/sci-wms/issues?state=open</a> for a list of known issues and problems.</p>
       </section>
       <footer>
-        <!--<p>This project is maintained by <a href="https://github.com/acrosby">acrosby</a></p> -->
-        <p><small>Hosted on GitHub Pages &mdash; Based on theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+        <p>This project is maintained by <a href="https://github.com/acrosby">acrosby</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
       </footer>
     </div>
-    <script src="/sci-wms/javascripts/scale.fix.js"></script>
+    <script src="javascripts/scale.fix.js"></script>
     
   </body>
 </html>

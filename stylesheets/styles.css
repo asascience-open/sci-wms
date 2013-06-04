@@ -99,9 +99,6 @@ header {
   width:270px;
   float:left;
   position:fixed;
-  background-image:url('header_vectors2.png');
-  background-position: center;
-  background-repeat: no-repeat;
 }
 
 header ul {
@@ -160,14 +157,6 @@ header ul a strong {
   font-size:14px;
   display:block;
   color:#222;
-}
-
-header p a {
-  background-color: #FFFFFF;
-}
-
-header p a small{
-  background-color: #FFFFFF;
 }
 
 section {
