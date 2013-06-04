@@ -1,0 +1,180 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Configure &mdash; SCI-WMS 0.0.2-dev documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.0.2-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="SCI-WMS 0.0.2-dev documentation" href="index.html" />
+    <link rel="next" title="Using SCI-WMS" href="using.html" />
+    <link rel="prev" title="Deployment" href="deployment.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="using.html" title="Using SCI-WMS"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="deployment.html" title="Deployment"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">SCI-WMS 0.0.2-dev documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="configure">
+<h1>Configure<a class="headerlink" href="#configure" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<p>Refer to this section if you are setting up SCI-WMS for the first time.</p>
+<div class="section" id="the-admin-site">
+<h3>The Admin Site<a class="headerlink" href="#the-admin-site" title="Permalink to this headline">¶</a></h3>
+<p>SCI-WMS comes with an administration site built into the server.
+This allows users to add and remove datasets, as well as setup
+and manage groups. (It is essentially the default Django admin
+interface, but it works well for our purposes.)</p>
+<p>The admin page can be found on a running instance at <strong>http://server:port/admin</strong> .</p>
+<p>The default username is <strong>sciwmsuser</strong>, and the default password is <strong>sciwmspassword</strong>.
+The first thing you should do after getting your server started is to login into the
+administration utility and change the password for this user, or remove the default user and add your
+own.</p>
+<div class="admonition caution">
+<p class="first admonition-title">Caution</p>
+<p>Depending on the version of Django you have installed, you
+may have a problem logging into the admin site, even with
+the correct password and username. An easy way to solve this
+problem is to run the following command in a terminal to reset
+the <em>sciwmsuser</em> password using Django&#8217;s management functionality:</p>
+<div class="last highlight-python"><pre>cd sci-wms/src/pywms &amp;&amp; python manage.py changepassword sciwmsuser</pre>
+</div>
+</div>
+</div>
+<div class="section" id="the-openlayers-test-page">
+<h3>The Openlayers Test Page<a class="headerlink" href="#the-openlayers-test-page" title="Permalink to this headline">¶</a></h3>
+<p>The server also comes with a very simple client using <em>openlayers.js</em> that can be used for testing
+the GetMap capability of the layers that have been setup in the server. In order for this test page
+to work correctly a number of things must be done. The datasets must be added to the server, the
+dataset <em>cache</em> must be initialized (more on this later), and the domain or IP must be added to the
+Sites list in the Admin app.</p>
+<p>Add your IP, localhost, or the domain (including ports if applicable) to the Sites list by removing the
+default entry and adding your&#8217;s as a new entry. The &#8220;Domain Name&#8221; field should be in the following form, omitting &#8220;<a class="reference external" href="http://">http://</a>&#8221;
+and the trailing &#8220;/&#8221;:</p>
+<blockquote>
+<div>server:port</div></blockquote>
+<p>Choose an appropriate nickname for the &#8220;Display Name&#8221; field.</p>
+</div>
+</div>
+<div class="section" id="sci-wms-administration">
+<h2>SCI-WMS Administration<a class="headerlink" href="#sci-wms-administration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="adding-datasets">
+<h3>Adding Datasets<a class="headerlink" href="#adding-datasets" title="Permalink to this headline">¶</a></h3>
+<p>Here is where we describe how to add datasets.</p>
+</div>
+<div class="section" id="dataset-cache-initialization-updating">
+<h3>Dataset Cache Initialization &amp; Updating<a class="headerlink" href="#dataset-cache-initialization-updating" title="Permalink to this headline">¶</a></h3>
+<p>Here is where we describe how to initialize the dataset topology cache, and what updating is.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Configure</a><ul>
+<li><a class="reference internal" href="#getting-started">Getting Started</a><ul>
+<li><a class="reference internal" href="#the-admin-site">The Admin Site</a></li>
+<li><a class="reference internal" href="#the-openlayers-test-page">The Openlayers Test Page</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sci-wms-administration">SCI-WMS Administration</a><ul>
+<li><a class="reference internal" href="#adding-datasets">Adding Datasets</a></li>
+<li><a class="reference internal" href="#dataset-cache-initialization-updating">Dataset Cache Initialization &amp; Updating</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="deployment.html"
+                        title="previous chapter">Deployment</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="using.html"
+                        title="next chapter">Using SCI-WMS</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/configure.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="using.html" title="Using SCI-WMS"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="deployment.html" title="Deployment"
+             >previous</a> |</li>
+        <li><a href="index.html">SCI-WMS 0.0.2-dev documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Alexander Crosby.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>
