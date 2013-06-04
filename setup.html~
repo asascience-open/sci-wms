@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Sci-wms by acrosby</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>SCI-WMS</h1>
+        <p>Sci-wms: A Python WMS service for geospatial gridded data</p>
+
+        <p class="view"><a href="https://github.com/acrosby/sci-wms">View the Project on GitHub <small>acrosby/sci-wms</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/acrosby/sci-wms/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/acrosby/sci-wms/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/acrosby/sci-wms">View On <strong>GitHub</strong></a></li>
+        </ul>
+      
+      <p class="view"><a href="http://acrosby.github.com/sci-wms/index.html">Install sci-wms and required dependencies</a><br>
+      
+      <a href="http://acrosby.github.com/sci-wms/run.html">Start the sci-wms service</a><br>
+      
+      <a href="http://acrosby.github.com/sci-wms/setup.html">Learn how to setup the sci-wms service</a><br>
+      
+      <a href="http://acrosby.github.com/sci-wms/configure.html">Learn how to configure new datasets</a><br>
+      <a href="http://acrosby.github.com/sci-wms/use.html">Making requests and customizing styles</a></p>
+                  <a href="http://ec2-107-21-136-52.compute-1.amazonaws.com:8080/mymaracoos/wmstest">See it in action</a><a href="/sci-wms/support.html">Acknowledgements and Support</a></p>
+      <br><br><br>
+      
+      </header>
+      
+      
+      
+<!--page content starts here -->      
+      <section>
+ <!--       <h1>sci-wms</h1>
+
+<h4>A Python WMS service for geospatial gridded data</h4>
+-->
+
+<h2>Setup</h2>
+<h4>Admin page/Change password for default user:</h4>
+
+<p>The default username is " *sciwmsuser* " and its password is " *sciwmspassword* ". So,
+the first thing you should do is login to the administration utility
+and change the password or remove the default user and create a new one
+for yourself.</p>
+<p>
+*Caution* : Depending on the version of Django you have installed you may have a problem
+logging into the admin site, even with the correct password. An easy way solve this problem is to
+simply to run the following command to reset the sciwmsuser password from the command line.</p>
+
+<pre><code>python manage.py changepassword sciwmsuser
+</code></pre>
+
+<p>The admin page can be found here:   http://server:port/admin</p>
+
+<p>This admin site is how you will add and remove datasets for the wms server.</p>
+
+<h4>http://server:port/wmstest</h4>
+
+<p>In order for the wmstest page to work you need to add your site (and port) url to the sites list and remove all others. This is *important* because a request to the *wmstest* page (or the http://server:port/update page) will
+initialize newly added datasets and update datasets that are specified as updateable in the system. If you have a lot of datasets in your server, it may take a while to initialize all of them.
+
+</p><p>
+Ensure that there is a dataset_id.nc and dataset_id.domain file in the pywms folder for each of your unstructured datasets before allowing others to use your services. Initialization needs to only be done once
+per dataset, and subsequent updates (if required) are quick. Structured grid datasets will only have a dataset_id.nc file in the pywms folder, they do not require the .domain file. If there
+is a problem generating the necessary files when adding new datasets, check the *sciwms_wms.log* file.</p>
+      </section>
+<!--end page content-->
+
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/acrosby">acrosby</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
