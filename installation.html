@@ -1,0 +1,196 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installation &mdash; SCI-WMS 0.0.2-dev documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.0.2-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="SCI-WMS 0.0.2-dev documentation" href="index.html" />
+    <link rel="next" title="&lt;no title&gt;" href="deployment.html" />
+    <link rel="prev" title="Welcome to SCI-WMS" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="deployment.html" title="&lt;no title&gt;"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to SCI-WMS"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">SCI-WMS 0.0.2-dev documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="system-requirements">
+<h2>System Requirements<a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>&gt;= 4GB RAM But it depends directly on the size and extents of the datasets you will be visualizing.</li>
+<li>&gt; 2 CPU (&gt; 4 CPU Better)</li>
+<li>Python 2.7.x with sqlite</li>
+<li>LibGeos (<a class="reference external" href="http://download.osgeo.org/geos/">http://download.osgeo.org/geos/</a>)</li>
+<li>LibSpatialIndex (<a class="reference external" href="http://libspatialindex.github.com">http://libspatialindex.github.com</a>)</li>
+<li>netCDF4 C library (with opendap enabled, if opendap/remote functionality is desired)</li>
+<li>libhdf5 C library (dependency of netCDF4)</li>
+<li>libcurl (required for opendap)</li>
+</ul>
+<p>Your system may have already installed the following dependencies, but
+they are required by some of the module dependencies installed in the next section.</p>
+<ul class="simple">
+<li>libpng</li>
+<li>libfreetype</li>
+<li>libjpeg</li>
+<li>libevent</li>
+</ul>
+</div>
+<div class="section" id="community">
+<h2>Community<a class="headerlink" href="#community" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://groups.google.com/forum/?fromgroups#!forum/sci-wms">We have started a Google Group for the sci-wms project located here.</a></p>
+</div>
+<div class="section" id="download">
+<h2>Download<a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://acrosby.github.com/sci-wms">Download the compressed project and unpack anywhere.</a> This is where the installation will live.</p>
+<p>Install the following Python dependencies using <tt class="docutils literal"><span class="pre">pip</span></tt>, <tt class="docutils literal"><span class="pre">easy_install</span></tt>, or equivalent.</p>
+<p>If you are using <a class="reference external" href="http://www.virtualenv.org/en/latest/">virtualenv</a>, just make
+sure you have the environment activated before you try to install the packages or point to the environment with pip on the install command:</p>
+<div class="highlight-python"><pre>$pip install numpy
+$pip install django&gt;=1.4
+$pip install gunicorn
+$pip install gevent
+$pip install matplotlib&gt;=1.2.0
+$pip install netCDF4
+$pip install shapely
+$pip install rtree</pre>
+</div>
+<p>You also need to ensure that you have basemap matplotlib toolkit installed,
+which isn&#8217;t available from pypi:</p>
+<div class="highlight-python"><pre>$wget http://sourceforge.net/projects/matplotlib/files/matplotlib-toolkits/basemap-1.0.6.tar.gz
+$pip install basemap-1.0.6.tar.gz</pre>
+</div>
+<p>If your version of the HDF5 C libraries is &gt;=1.8.10, you may have to install
+the netCDF4 Python module from the source repository in order for it to work properly.
+This requires an SVN client to be installed on your system. (Please let us know if
+you have problems importing netCDF4 in Python after running this command):</p>
+<div class="highlight-python"><pre>$pip install -e svn+http://netcdf4-python.googlecode.com/svn/trunk#egg=netCDF4</pre>
+</div>
+<p>If your NetCDF4 and HDF5 libraries are in non-typical locations, you will need to pass the locations to the <cite>pip</cite> command:</p>
+<div class="highlight-python"><pre>$NETCDF4_DIR=path HDF5_DIR=path pip install netCDF4</pre>
+</div>
+<p>If there is problem with gevent or greenlet, or if you would like gunicorn
+to use an alternative worker, you can install the <cite>eventlet</cite> worker. With some configuration
+of the sci-wms gunicorn configuration files,  you can also use <cite>tornado</cite> workers:</p>
+<div class="highlight-python"><pre>$pip install eventlet
+$pip install tornado</pre>
+</div>
+</div>
+<div class="section" id="run-the-tests">
+<h2>Run the Tests<a class="headerlink" href="#run-the-tests" title="Permalink to this headline">¶</a></h2>
+<p>To make sure that dependencies have been installed correctly, and that sci-wms is fully functional.
+Run the following command to run the tests from the command line:</p>
+<div class="highlight-python"><pre>cd sci-wms/src/pywms &amp;&amp; python manage.py test</pre>
+</div>
+</div>
+<div class="section" id="issues">
+<h2>Issues<a class="headerlink" href="#issues" title="Permalink to this headline">¶</a></h2>
+<p>Look at <a class="reference external" href="https://github.com/acrosby/sci-wms/issues?state=open">https://github.com/acrosby/sci-wms/issues?state=open</a> for a list of known issues and problems.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installation</a><ul>
+<li><a class="reference internal" href="#system-requirements">System Requirements</a></li>
+<li><a class="reference internal" href="#community">Community</a></li>
+<li><a class="reference internal" href="#download">Download</a></li>
+<li><a class="reference internal" href="#run-the-tests">Run the Tests</a></li>
+<li><a class="reference internal" href="#issues">Issues</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to SCI-WMS</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="deployment.html"
+                        title="next chapter">&lt;no title&gt;</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/installation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="deployment.html" title="&lt;no title&gt;"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to SCI-WMS"
+             >previous</a> |</li>
+        <li><a href="index.html">SCI-WMS 0.0.2-dev documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Alexander Crosby.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>
