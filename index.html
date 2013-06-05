@@ -1,144 +1,160 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>SCI-WMS by acrosby</title>
 
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to SCI-WMS &mdash; SCI-WMS 0.0.2-dev documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.0.2-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="SCI-WMS 0.0.2-dev documentation" href="#" /> 
   </head>
   <body>
-    <div class="wrapper">
-      <header>
-        <h1>SCI-WMS</h1>
-        <p>Sci-wms: A Python WMS service for geospatial gridded data (Only unstructured FVCOM and ADCIRC grids logically rectangular grids supported)</p>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="docs.html">SCI-WMS 0.0.2-dev documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
 
-        <p class="view"><a href="https://github.com/acrosby/sci-wms">View the Project on GitHub <small>acrosby/sci-wms</small></a><br>
-        <a href="http://acrosby.github.io/sci-wms/docs.html">Take a Look at the Documentation</a><br>
-        <a href="http://ec2-107-21-136-52.compute-1.amazonaws.com:8080/mymaracoos/wmstest">See SCI-WMS in Action</a><br>
-        <a href="http://acrosby.github.io/sci-wms/support.html">Acknowledgments and Support</a></p>
-        <ul>
-          <li><a href="https://github.com/acrosby/sci-wms/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/acrosby/sci-wms/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/acrosby/sci-wms">View On <strong>GitHub</strong></a></li>
-        </ul>
-      </header>
-      <section>
-        
-<!--<h1><a name="sci-wms" class="anchor" href="#sci-wms"><span class="octicon octicon-link"></span></a>sci-wms</h1>
--->
-<p>COPYRIGHT 2010 Alexander Crosby</p>
-
-<h4>
-<a name="a-python-wms-service-for-geospatial-gridded-data" class="anchor" href="#a-python-wms-service-for-geospatial-gridded-data"><span class="octicon octicon-link"></span></a>A Python WMS service for geospatial gridded data</h4>
-
-<h2>
-<a name="system-requirements" class="anchor" href="#system-requirements"><span class="octicon octicon-link"></span></a>System Requirements</h2>
-
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="welcome-to-sci-wms">
+<h1>Welcome to SCI-WMS<a class="headerlink" href="#welcome-to-sci-wms" title="Permalink to this headline">¶</a></h1>
+<p>SCI-WMS is a Python WMS service for geospatial
+gridded data. It supports triangular unstructured meshes and logically
+rectangular grids including grids referred to as <em>curvilinear</em>.</p>
+<p>If you would like to know if your dataset can be served with SCI-WMS,
+or how to get started with your own SCI-WMS server we would be happy
+to help.</p>
+<div class="toctree-wrapper compound">
 <ul>
-<li>&gt;= 4GB RAM But it depends directly on the size and extents of the datasets you will be visualizing.</li>
-<li>&gt; 2 CPU (&gt; 4 CPU Better) </li>
-<li>Python 2.7.x with sqlite</li>
-<li>LibGeos (<a href="http://download.osgeo.org/geos/">http://download.osgeo.org/geos/</a>)</li>
-<li>LibSpatialIndex (<a href="http://libspatialindex.github.com">http://libspatialindex.github.com</a>)</li>
-<li>netCDF4 C library (with opendap enabled, if opendap/remote functionality is desired)</li>
-<li>libhdf5 C library (dependency of netCDF4)</li>
-<li>libcurl (required for opendap)</li>
-</ul><p>Your system may have already installed the following dependencies, but 
-they are required by some of the module dependencies installed in the next section.</p>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#system-requirements">System Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#community">Community</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#download">Download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#run-the-tests">Run the Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#issues">Issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#using-the-gunicorn-server">Using the Gunicorn Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#proxying-with-nginx">Proxying with nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#management-with-upstart">Management with Upstart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#management-with-supervisord">Management with Supervisord</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configure.html">Configure</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configure.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configure.html#sci-wms-administration">SCI-WMS Administration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="using.html">Using SCI-WMS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="roadmap.html">Roadmap</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="roadmap.html#current-release">Current (0.0.2-dev)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="roadmap.html#version-1-0-0">Version 1.0.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="roadmap.html#version-1-1-0">Version 1.1.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="roadmap.html#version-1-2-0">Version 1.2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="roadmap.html#goals-not-assigned-to-a-version">Goals not assigned to a version</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>No tools for comparing multiple unstructured models out of the box</li>
+<li>WMS technologies don&#8217;t support unstructured meshes in a format the preserves topology</li>
+<li>Consensus building around a UGRID-CF proposal conventions</li>
+<li>Vast amount of large collections of met-ocean data available over OpenDAP</li>
+</ul>
+</div>
+<div class="section" id="features">
+<h2>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Syles that preserve unstructured mesh topology</li>
+<li>Sophisticated layer specification and style syntax</li>
+<li>Closely linked to matplotlib the predominant Python library for scientific plotting</li>
+<li>Support for groups of datasets</li>
+<li>Topologically correct GetFeatureInfo querying on unstructured meshes and regular grids</li>
+</ul>
+</div>
+</div>
 
-<ul>
-<li>libpng</li>
-<li>libfreetype</li>
-<li>libjpeg</li>
-<li>libevent</li>
-</ul><h2>
-<a name="community" class="anchor" href="#community"><span class="octicon octicon-link"></span></a>Community</h2>
 
-<p><a href="https://groups.google.com/forum/?fromgroups#!forum/sci-wms">We have started a Google Group for the sci-wms project located here.</a></p>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="docs.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to SCI-WMS</a><ul>
+<li><a class="reference internal" href="#background">Background</a></li>
+<li><a class="reference internal" href="#features">Features</a></li>
+</ul>
+</li>
+</ul>
 
-<h2>
-<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
-
-<p><a href="http://acrosby.github.com/sci-wms">Download the compressed project and unpack anywhere.</a> This is where the installation will live.</p>
-
-<p>Install the following Python dependencies using <code>pip</code>, <code>easy_install</code>, or equivalent. 
-If you are using <a href="http://www.virtualenv.org/en/latest/">virtualenv</a>, just make 
-sure you have the environment
-activated before you try to install the packages or point to the environment
-with pip on the install command.</p>
-
-<div class="highlight"><pre>pip install numpy
-pip install django&gt;<span class="o">=</span>1.4
-pip install gunicorn
-pip install gevent
-pip install matplotlib&gt;<span class="o">=</span>1.2.0
-pip install netCDF4
-pip install shapely
-pip install rtree
-</pre></div>
-
-<p>You also need to ensure that you have basemap matplotlib toolkit installed, 
-which isn't available from pypi.</p>
-
-<div class="highlight"><pre>wget http://sourceforge.net/projects/matplotlib/files/matplotlib-toolkits/basemap-1.0.6/basemap-1.0.6.tar.gz
-pip install basemap-1.0.6.tar.gz
-</pre></div>
-
-<p>If your version of the HDF5 C libraries is &gt;=1.8.10, you may have to install 
-the netCDF4 Python module from the source repository in order for it to work properly. 
-This requires an SVN client to be installed on your system. (Please let us know if 
-you have problems importing netCDF4 in Python after running this command.)</p>
-
-<div class="highlight"><pre>pip install -e svn+http://netcdf4-python.googlecode.com/svn/trunk#egg<span class="o">=</span>netCDF4
-</pre></div>
-
-<p>If your NetCDF4 and HDF5 libraries are in non-typical locations, you will need to pass the locations to the <code>pip</code> command:</p>
-
-<div class="highlight"><pre><span class="nv">NETCDF4_DIR</span><span class="o">=</span>path <span class="nv">HDF5_DIR</span><span class="o">=</span>path pip install netCDF4
-</pre></div>
-
-<p>If there is problem with gevent or greenlet, or if you would like gunicorn 
-to use an alternative worker, you can install the <code>eventlet</code> worker. With some configuration 
-of the sci-wms gunicorn configuration files,  you can also use <code>tornado</code> workers.</p>
-
-<div class="highlight"><pre>pip install eventlet
-pip install tornado
-</pre></div>
-
-<h2>
-<a name="test" class="anchor" href="#test"><span class="octicon octicon-link"></span></a>Test</h2>
-
-<p>To make sure that dependencies have been installed correctly, and that sci-wms is fully functional. 
-Run the following command to run the tests.</p>
-
-<div class="highlight"><pre><span class="nb">cd </span>sci-wms/src/pywms <span class="o">&amp;&amp;</span> python manage.py <span class="nb">test</span>
-</pre></div>
-
-<h2>
-<a name="start-the-services" class="anchor" href="#start-the-services"><span class="octicon octicon-link"></span></a>Start the services</h2>
-
-<p>You can start the services on port 7000 from the command line by using the following commands. <a href="http://gunicorn.org/">Learn about gunicorn wsgi server configuration by clicking here.</a></p>
-
-<div class="highlight"><pre><span class="nb">cd </span>sci-wms/src/pywms <span class="o">&amp;&amp;</span> gunicorn_django -c config_public.py
-</pre></div>
-
-<h2>
-<a name="caveats" class="anchor" href="#caveats"><span class="octicon octicon-link"></span></a>Caveats:</h2>
-
-<p>Look at <a href="https://github.com/acrosby/sci-wms/issues?state=open">https://github.com/acrosby/sci-wms/issues?state=open</a> for a list of known issues and problems.</p>
-      </section>
-      <footer>
-        <p>This project is maintained by <a href="https://github.com/acrosby">acrosby</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
     </div>
-    <script src="javascripts/scale.fix.js"></script>
-    
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="docs.html">SCI-WMS 0.0.2-dev documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Alexander Crosby.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
   </body>
 </html>
