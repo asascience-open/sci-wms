@@ -53,6 +53,44 @@
             
   <div class="section" id="using-sci-wms">
 <h1>Using SCI-WMS<a class="headerlink" href="#using-sci-wms" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="ogc-web-mapping-service-wms-api">
+<h2>OGC Web Mapping Service (WMS) API<a class="headerlink" href="#ogc-web-mapping-service-wms-api" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="sci-wms-getcapabilities">
+<h2>SCI-WMS GetCapabilities<a class="headerlink" href="#sci-wms-getcapabilities" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="sci-wms-getmap">
+<h2>SCI-WMS GetMap<a class="headerlink" href="#sci-wms-getmap" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="sci-wms-getlegendgraphic">
+<h2>SCI-WMS GetLegendGraphic<a class="headerlink" href="#sci-wms-getlegendgraphic" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="sci-wms-getfeatureinfo-gfi">
+<h2>SCI-WMS GetFeatureInfo (GFI)<a class="headerlink" href="#sci-wms-getfeatureinfo-gfi" title="Permalink to this headline">¶</a></h2>
+<p>To support queries at specific points in order allow for timeseries extraction from datasets, SCI-WMS supports WMS GetFeatureInfo (GFI) requrests. A generic example, and real life request can be found below.</p>
+<p>The generic structure of a GetFeatureInfo request to SCI-WMS looks a lot like a GetMap request (in fact some of the parameters are even repeated as-is). The key change is <tt class="docutils literal"><span class="pre">REQUST=GetFeatureInfo</span></tt> and some other GFI specific parameters to locate the point of interest based on the current map extent. The general structure is as follows:</p>
+<blockquote>
+<div><a class="reference external" href="http://server:port/wms/dataset_id">http://server:port/wms/dataset_id</a>?
+ELEVATION=z_index&amp;
+LAYERS=netcdf_variable_of_interest&amp;
+FORMAT=getmap_image_format&amp;
+TRANSPARENT=unused_by_sciwms&amp;
+STYLES=style_of_getmap_request&amp;
+SERVICE=WMS&amp;
+VERSION=1.1.1&amp;
+REQUEST=GetFeatureInfo&amp;
+SRS=EPSG:3857&amp;
+BBOX=ll_x,ll_y,ur_x,ur_y&amp;
+X=point_at_x_pixel_from_ur&amp;
+Y=point_at_y_pixel_from_ur&amp;
+INFO_FORMAT=getfeatureinfo_response_format&amp;
+WIDTH=getmap_width_in_px&amp;
+HEIGHT=getmap_height_in_px&amp;
+QUERY_LAYERS=commasep_variables_for_gfi&amp;
+TIME=starttime_isostr/stoptime_isostr</div></blockquote>
+<p>The following is a real GFI request to a server that is (hopefully, please visit the google group and let us know if you are having problems) currently running and will return a jsonp formatted GeoJson response with the requests parameters (in this case variables, u and v for the nearest time since the TIME parameter is empty.</p>
+<p><a class="reference external" href="http://ec2-107-21-136-52.compute-1.amazonaws.com:8080/wms/necofs_forecast/?ELEVATION=39&amp;LAYERS=temp&amp;FORMAT=image/png&amp;TRANSPARENT=TRUE&amp;STYLES=pcolor_average_jet_5_20_node_False&amp;SERVICE=WMS&amp;VERSION=1.1.1&amp;REQUEST=GetFeatureInfo&amp;SRS=EPSG:3857&amp;BBOX=-8465091.73609,4343330.730541,-7489143.759081,5446469.922599&amp;X=237&amp;Y=167&amp;INFO_FORMAT=text/javascript&amp;WIDTH=399&amp;HEIGHT=451&amp;QUERY_LAYERS=u,v&amp;TIME=">http://ec2-107-21-136-52.compute-1.amazonaws.com:8080/wms/necofs_forecast/?ELEVATION=39&amp;LAYERS=temp&amp;FORMAT=image/png&amp;TRANSPARENT=TRUE&amp;STYLES=pcolor_average_jet_5_20_node_False&amp;SERVICE=WMS&amp;VERSION=1.1.1&amp;REQUEST=GetFeatureInfo&amp;SRS=EPSG:3857&amp;BBOX=-8465091.73609,4343330.730541,-7489143.759081,5446469.922599&amp;X=237&amp;Y=167&amp;INFO_FORMAT=text/javascript&amp;WIDTH=399&amp;HEIGHT=451&amp;QUERY_LAYERS=u,v&amp;TIME=</a></p>
+</div>
 </div>
 
 
@@ -61,6 +99,18 @@
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="docs.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Using SCI-WMS</a><ul>
+<li><a class="reference internal" href="#ogc-web-mapping-service-wms-api">OGC Web Mapping Service (WMS) API</a></li>
+<li><a class="reference internal" href="#sci-wms-getcapabilities">SCI-WMS GetCapabilities</a></li>
+<li><a class="reference internal" href="#sci-wms-getmap">SCI-WMS GetMap</a></li>
+<li><a class="reference internal" href="#sci-wms-getlegendgraphic">SCI-WMS GetLegendGraphic</a></li>
+<li><a class="reference internal" href="#sci-wms-getfeatureinfo-gfi">SCI-WMS GetFeatureInfo (GFI)</a></li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="configure.html"
                         title="previous chapter">Configure</a></p>

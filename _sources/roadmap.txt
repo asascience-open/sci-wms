@@ -52,6 +52,12 @@ By this version we would like to see solid support for all
 netCDF/openDAP datasets that can be expressed by CF, 
 anything that is not supported will be considered a bug.
 
+=============
+Version 2.0.0
+=============
+
+The aim for this version is to provide a plug-able framework for creating styles, to allow users and clients to come up with their own and distribute.
+
 ================================
 Goals not assigned to a version
 ================================
