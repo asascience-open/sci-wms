@@ -1,0 +1,163 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Using SCI-WMS &mdash; SCI-WMS 0.0.2-dev documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.0.2-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="SCI-WMS 0.0.2-dev documentation" href="index.html" />
+    <link rel="next" title="Roadmap" href="roadmap.html" />
+    <link rel="prev" title="Configure" href="configure.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="roadmap.html" title="Roadmap"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="configure.html" title="Configure"
+             accesskey="P">previous</a> |</li>
+        <li><a href="docs.html">SCI-WMS 0.0.2-dev documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="using-sci-wms">
+<h1>Using SCI-WMS<a class="headerlink" href="#using-sci-wms" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="ogc-web-mapping-service-wms-api">
+<h2>OGC Web Mapping Service (WMS) API<a class="headerlink" href="#ogc-web-mapping-service-wms-api" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="sci-wms-getcapabilities">
+<h2>SCI-WMS GetCapabilities<a class="headerlink" href="#sci-wms-getcapabilities" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="sci-wms-getmap">
+<h2>SCI-WMS GetMap<a class="headerlink" href="#sci-wms-getmap" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="sci-wms-getlegendgraphic">
+<h2>SCI-WMS GetLegendGraphic<a class="headerlink" href="#sci-wms-getlegendgraphic" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="sci-wms-getfeatureinfo-gfi">
+<h2>SCI-WMS GetFeatureInfo (GFI)<a class="headerlink" href="#sci-wms-getfeatureinfo-gfi" title="Permalink to this headline">¶</a></h2>
+<p>To support queries at specific points in order allow for timeseries extraction from datasets, SCI-WMS supports WMS GetFeatureInfo (GFI) requrests. A generic example, and real life request can be found below.</p>
+<p>The generic structure of a GetFeatureInfo request to SCI-WMS looks a lot like a GetMap request (in fact some of the parameters are even repeated as-is). The key change is <tt class="docutils literal"><span class="pre">REQUST=GetFeatureInfo</span></tt> and some other GFI specific parameters to locate the point of interest based on the current map extent. The general structure is as follows:</p>
+<blockquote>
+<div><p><a class="reference external" href="http://server:port/wms/dataset_id">http://server:port/wms/dataset_id</a>?</p>
+<p>ELEVATION=z_index&amp;</p>
+<p>LAYERS=netcdf_variable_of_interest&amp;</p>
+<p>FORMAT=getmap_image_format&amp;</p>
+<p>TRANSPARENT=unused_by_sciwms&amp;</p>
+<p>STYLES=style_of_getmap_request&amp;</p>
+<p>SERVICE=WMS&amp;</p>
+<p>VERSION=1.1.1&amp;</p>
+<p>REQUEST=GetFeatureInfo&amp;</p>
+<p>SRS=EPSG:3857&amp;</p>
+<p>BBOX=ll_x,ll_y,ur_x,ur_y&amp;</p>
+<p>X=point_at_x_pixel_from_ul&amp;</p>
+<p>Y=point_at_y_pixel_from_ul&amp;</p>
+<p>INFO_FORMAT=getfeatureinfo_response_format&amp;</p>
+<p>WIDTH=getmap_width_in_px&amp;</p>
+<p>HEIGHT=getmap_height_in_px&amp;</p>
+<p>QUERY_LAYERS=commasep_variables_for_gfi&amp;</p>
+<p>TIME=starttime_isostr/stoptime_isostr</p>
+</div></blockquote>
+<p>The following is a real GFI request to a server that is (hopefully, please visit the google group and let us know if you are having problems) currently running and will return a jsonp formatted GeoJson response with the requests parameters (in this case variables, u and v for the nearest time since the TIME parameter is empty.</p>
+<p><a class="reference external" href="http://ec2-107-21-136-52.compute-1.amazonaws.com:8080/wms/necofs_forecast/?ELEVATION=39&amp;LAYERS=u,v&amp;FORMAT=image/png&amp;TRANSPARENT=TRUE&amp;STYLES=pcolor_average_jet_5_20_cell_False&amp;SERVICE=WMS&amp;VERSION=1.1.1&amp;REQUEST=GetFeatureInfo&amp;SRS=EPSG:3857&amp;BBOX=-8465091.73609,4343330.730541,-7489143.759081,5446469.922599&amp;X=237&amp;Y=167&amp;INFO_FORMAT=text/javascript&amp;WIDTH=399&amp;HEIGHT=451&amp;QUERY_LAYERS=u,v&amp;TIME=">http://ec2-107-21-136-52.compute-1.amazonaws.com:8080/wms/necofs_forecast/?ELEVATION=39&amp;LAYERS=u,v&amp;FORMAT=image/png&amp;TRANSPARENT=TRUE&amp;STYLES=pcolor_average_jet_5_20_cell_False&amp;SERVICE=WMS&amp;VERSION=1.1.1&amp;REQUEST=GetFeatureInfo&amp;SRS=EPSG:3857&amp;BBOX=-8465091.73609,4343330.730541,-7489143.759081,5446469.922599&amp;X=237&amp;Y=167&amp;INFO_FORMAT=text/javascript&amp;WIDTH=399&amp;HEIGHT=451&amp;QUERY_LAYERS=u,v&amp;TIME=</a></p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="docs.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Using SCI-WMS</a><ul>
+<li><a class="reference internal" href="#ogc-web-mapping-service-wms-api">OGC Web Mapping Service (WMS) API</a></li>
+<li><a class="reference internal" href="#sci-wms-getcapabilities">SCI-WMS GetCapabilities</a></li>
+<li><a class="reference internal" href="#sci-wms-getmap">SCI-WMS GetMap</a></li>
+<li><a class="reference internal" href="#sci-wms-getlegendgraphic">SCI-WMS GetLegendGraphic</a></li>
+<li><a class="reference internal" href="#sci-wms-getfeatureinfo-gfi">SCI-WMS GetFeatureInfo (GFI)</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="configure.html"
+                        title="previous chapter">Configure</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="roadmap.html"
+                        title="next chapter">Roadmap</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/using.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="roadmap.html" title="Roadmap"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="configure.html" title="Configure"
+             >previous</a> |</li>
+        <li><a href="docs.html">SCI-WMS 0.0.2-dev documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Alexander Crosby.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>
