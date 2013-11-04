@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -15,7 +13,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
+        URL_ROOT:    './',
         VERSION:     '0.0.2-dev',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -97,11 +95,72 @@ and the trailing &#8220;/&#8221;:</p>
 <h2>SCI-WMS Administration<a class="headerlink" href="#sci-wms-administration" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="adding-datasets">
 <h3>Adding Datasets<a class="headerlink" href="#adding-datasets" title="Permalink to this headline">¶</a></h3>
-<p>Here is where we describe how to add datasets.</p>
+<p>Django was chosen for the Python web framework because of the out-of-the-box database abstraction API that it provides. There have been some growing pains as Django has matured, and evolved like the change in project/app file structure (we still use the old structure). SCI-WMS uses a sqlite portable file based database that already exists in the project Git repository.</p>
+<p>SCI-WMS relies on the database to store dataset metadata, server metadata, and to provide some persistent user-enhanced abstraction with groups and derived layers.</p>
+<div class="section" id="datasets-in-the-database">
+<h4>Datasets in the database<a class="headerlink" href="#datasets-in-the-database" title="Permalink to this headline">¶</a></h4>
+<p>The <strong>dataset</strong> metadata stored in the database is the following:</p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>Uri</strong>: the opendap endpoint or local file path</li>
+<li><strong>Name</strong>: this is really the dataset id, and must be a valid POSIX compliant file name, and lack spaces</li>
+<li><strong>Title</strong>:  This shows up in GetCapabilities documents and the like as the human readable Title</li>
+<li><strong>Abstract</strong>: This is a human readable abstract for the dataset</li>
+<li><strong>Test Layer</strong>: this is the netcdf variable to use as the demo variable in the embedded <em>/wmstest</em> client included in the app</li>
+<li><strong>Test Style</strong>: this is the SCI-WMS style to use on the demo variable in the embedded <em>/wmstest</em> client included in the app</li>
+<li><strong>Keep up to date</strong>: This is a boolean toggle to instruct the server the keep the dataset topology cache up-to-date during cache updates, or treat the file as static and not changeing. (For an operational forecast collection, you would toggle on., For the FVCOM NECOFS 33-yr Hindcast you could just leave it toggled off)</li>
+<li><strong>Display all timesteps</strong>: This is a boolean toggle to instruct the service to return the individual timesteps in an dataset for a GetCapabilities request, otherwise just include the range. Returning each timestep number in the GetCapabilities for large NCML OpenDAP aggregations is potentially problematic.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="groups-in-the-database">
+<h4>Groups in the database<a class="headerlink" href="#groups-in-the-database" title="Permalink to this headline">¶</a></h4>
+<p>The <strong>groups</strong> elements coordinate which datasets belong to which groups and allow you to provide <em>/wmstest</em> and <em>GetCapabilities</em> for all datasets in a group in single group-endpoints.</p>
+</div>
+<div class="section" id="server-metadata">
+<h4>Server metadata<a class="headerlink" href="#server-metadata" title="Permalink to this headline">¶</a></h4>
+<p>The <strong>server</strong> database element is similarly self explainatory. Edit with specfic metadata about the SCI-WMS instance you are setting up. This information appears in  <em>GetCapabilities</em> documents.</p>
+</div>
+<div class="section" id="virtual-layers">
+<h4>Virtual layers<a class="headerlink" href="#virtual-layers" title="Permalink to this headline">¶</a></h4>
+<p><strong>Virtual Layers</strong> allow you do take a SCI-WMS valid parameter expression using multiple variables from a dataset, and simplify it by using a descriptive layer name that will also appear in the <em>GetCapabilities</em> documents. (These will be explained later.) This is so that generic web clients don&#8217;t necessarility need to know the intracacies of assembling SCI-WMS parameter expressions in requests.</p>
+</div>
+<div class="section" id="wmstest-functionality">
+<h4><em>&#8216;/wmstest&#8217;</em> Functionality<a class="headerlink" href="#wmstest-functionality" title="Permalink to this headline">¶</a></h4>
+<p>In order for the <em>/wmstest</em> pages to work, there must be a <strong>site</strong> element in the database. One is included by default, but it must be adapted for your particular instance if you want to provide the embedded OpenLayers test client to users. Otherwise layers will appear to be broken in the client. Edit the <strong>Domain Name</strong> in the <strong>site</strong> element with your site and port in the form of <cite>domain_or_ip:port</cite>. Leave off the port if you intend to access the server over port 80. Also leave off the preceeding <em>http://</em> and any trailing slashes.</p>
+<p>The <em>/wmstest</em> site can be accessed at <cite>domain_or_ip:port/wmstest</cite> in order to quickly test datasets that have been added to the SCI-WMS instance.</p>
+</div>
+<div class="section" id="topology-cache">
+<h4>Topology Cache<a class="headerlink" href="#topology-cache" title="Permalink to this headline">¶</a></h4>
+<p>The topology cache is an important optimization that speeds up response times for datasets that are accessed over opendap. The cache is current located in the folder of the SCI-WMS instance at <cite>path/to/sci-wms/src/pywms</cite>. There are a number of files that make up the cache, and they vary by dataset type.</p>
+<p>Each file has a name that is taken directly from the SCI-WMS <strong>Dataset</strong>&#8216;s <strong>&#8216;Name&#8217;</strong>.</p>
+<p>####Spatial Tree (.idx and .dat)</p>
+<p>These files contain serialized <em>RTree</em> spatial kd-tree objects that are used for quickly making nearest neighbor queries as part of GetFeatureInfo requests.</p>
+<p>These are necessary for large unstructured meshes, but are also used for the logically rectangular grids as well. (Ideally it would be nice to move away from <em>RTree</em> into a better KD-Tree implementation, like <em>sklearn</em>&#8216;s, that will be have better on disk...will have to accept slower performance when initially buiding the indexes though.)</p>
+<p>These files are constructed once when the dataset is added, and then not updated subsequently even if <strong>Keep up to date</strong> is toggled for the dataset.</p>
+<p>####NetCDF (.nc)</p>
+<p>This file contains the up-to-date coordinate variable data for the dataset. This is typically Latitude/Longitude, and Time. For forecasts that are routinely updates, the time variable typically is growing with each update.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For unstructured meshes the nodal vertex coordinates of the elements as well of the coodinates of the element centers are stored here.</p>
+</div>
+<p>####Bounding Polygon (.domain)</p>
+<p>This file is a Python dump of a Shapely polygon object that represents the maximum-extent bounding polygon of an unstructured mesh dataset.</p>
+<p>This file is constructed once when the dataset is added, and then not updated subsequently even if <strong>Keep up to date</strong> is toggled for the dataset.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><em>This file will only exist for datasets with unstructured meshes</em></p>
+</div>
+</div>
 </div>
 <div class="section" id="dataset-cache-initialization-updating">
 <h3>Dataset Cache Initialization &amp; Updating<a class="headerlink" href="#dataset-cache-initialization-updating" title="Permalink to this headline">¶</a></h3>
-<p>Here is where we describe how to initialize the dataset topology cache, and what updating is.</p>
+<p>Calls to <cite>server:port/update</cite> will start a process to initialize newly added datasets and update older datasets that have <strong>keep up to date</strong> enabled. The admin interface does not initialize new datasets, it only adds the corresponding metadata into the database.</p>
+<p>This initialization and update process can also be started from the command line using the command this command. This what the call to <cite>server:port/update</cite> does in the back end.</p>
+<blockquote>
+<div>cd path/to/sci-wms/src/pywms &amp;&amp; /path/to/your/python manage.py updatecache</div></blockquote>
+<p>This process builds and updates the proper files outlined in this <strong>Topology Cache</strong> section. <strong>It is probably beneficial to set a cron job that does this routinely every *X* hours on the deployment server.</strong></p>
+<p>This <cite>manage.py updatecache</cite> call actually calls methods in  <cite>grid_init_script.py</cite> (<strong>which is not a script anymore</strong>). This file contains some hacky only vaugly CFish readers to interpret the source file or endpoint and generate the topology cache. Ultimately we should complement the <em>just sort of OK</em> readers with the appropriate <em>perfect CF-UGRID</em> and GRID readers. This will be more important as full support for ROMS grids is added.</p>
 </div>
 </div>
 </div>
@@ -121,7 +180,15 @@ and the trailing &#8220;/&#8221;:</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#sci-wms-administration">SCI-WMS Administration</a><ul>
-<li><a class="reference internal" href="#adding-datasets">Adding Datasets</a></li>
+<li><a class="reference internal" href="#adding-datasets">Adding Datasets</a><ul>
+<li><a class="reference internal" href="#datasets-in-the-database">Datasets in the database</a></li>
+<li><a class="reference internal" href="#groups-in-the-database">Groups in the database</a></li>
+<li><a class="reference internal" href="#server-metadata">Server metadata</a></li>
+<li><a class="reference internal" href="#virtual-layers">Virtual layers</a></li>
+<li><a class="reference internal" href="#wmstest-functionality"><em>&#8216;/wmstest&#8217;</em> Functionality</a></li>
+<li><a class="reference internal" href="#topology-cache">Topology Cache</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#dataset-cache-initialization-updating">Dataset Cache Initialization &amp; Updating</a></li>
 </ul>
 </li>
@@ -174,7 +241,7 @@ and the trailing &#8220;/&#8221;:</p>
     </div>
     <div class="footer">
         &copy; Copyright 2013, Alexander Crosby.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b2.
     </div>
   </body>
 </html>
