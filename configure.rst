@@ -134,10 +134,9 @@ This file is constructed once when the dataset is added, and then not updated su
 Dataset Cache Initialization & Updating
 ****************************************
 
-Calls to `server:port/update` will start a process to initialize newly added datasets and update older datasets that have **keep up to date** enabled. The admin interface does not initialze new datasets, it only adds the cooresponding metadata into the database.
+Calls to `server:port/update` will start a process to initialize newly added datasets and update older datasets that have **keep up to date** enabled. The admin interface does not initialize new datasets, it only adds the corresponding metadata into the database.
 
-This initilzation and update process can also be started from the command line using the command this command. This what the call to `server:port/update` does in the back end.
-
+This initialization and update process can also be started from the command line using the command this command. This what the call to `server:port/update` does in the back end.
 
     cd path/to/sci-wms/src/pywms && /path/to/your/python manage.py updatecache
 
