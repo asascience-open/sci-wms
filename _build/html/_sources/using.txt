@@ -93,7 +93,7 @@ SCI-WMS Styles
 
 The basic form of the sci-wms styles parameter is as follows::
 
-imagetype_unused_colormap_colormin_colormax_paramterlocation_wildcard
+    imagetype_unused_colormap_colormin_colormax_paramterlocation_wildcard
 
  - Image Type:
  - Unused:
