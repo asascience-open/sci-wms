@@ -134,17 +134,22 @@ and the trailing &#8220;/&#8221;:</p>
 <h4>Topology Cache<a class="headerlink" href="#topology-cache" title="Permalink to this headline">¶</a></h4>
 <p>The topology cache is an important optimization that speeds up response times for datasets that are accessed over opendap. The cache is current located in the folder of the SCI-WMS instance at <cite>path/to/sci-wms/src/pywms</cite>. There are a number of files that make up the cache, and they vary by dataset type.</p>
 <p>Each file has a name that is taken directly from the SCI-WMS <strong>Dataset</strong>&#8216;s <strong>&#8216;Name&#8217;</strong>.</p>
-<p>####Spatial Tree (.idx and .dat)</p>
+<div class="section" id="spatial-tree-idx-and-dat">
+<h5>Spatial Tree (.idx and .dat)<a class="headerlink" href="#spatial-tree-idx-and-dat" title="Permalink to this headline">¶</a></h5>
 <p>These files contain serialized <em>RTree</em> spatial kd-tree objects that are used for quickly making nearest neighbor queries as part of GetFeatureInfo requests.</p>
 <p>These are necessary for large unstructured meshes, but are also used for the logically rectangular grids as well. (Ideally it would be nice to move away from <em>RTree</em> into a better KD-Tree implementation, like <em>sklearn</em>&#8216;s, that will be have better on disk...will have to accept slower performance when initially buiding the indexes though.)</p>
 <p>These files are constructed once when the dataset is added, and then not updated subsequently even if <strong>Keep up to date</strong> is toggled for the dataset.</p>
-<p>####NetCDF (.nc)</p>
+</div>
+<div class="section" id="netcdf-nc">
+<h5>NetCDF (.nc)<a class="headerlink" href="#netcdf-nc" title="Permalink to this headline">¶</a></h5>
 <p>This file contains the up-to-date coordinate variable data for the dataset. This is typically Latitude/Longitude, and Time. For forecasts that are routinely updates, the time variable typically is growing with each update.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">For unstructured meshes the nodal vertex coordinates of the elements as well of the coodinates of the element centers are stored here.</p>
 </div>
-<p>####Bounding Polygon (.domain)</p>
+</div>
+<div class="section" id="bounding-polygon-domain">
+<h5>Bounding Polygon (.domain)<a class="headerlink" href="#bounding-polygon-domain" title="Permalink to this headline">¶</a></h5>
 <p>This file is a Python dump of a Shapely polygon object that represents the maximum-extent bounding polygon of an unstructured mesh dataset.</p>
 <p>This file is constructed once when the dataset is added, and then not updated subsequently even if <strong>Keep up to date</strong> is toggled for the dataset.</p>
 <div class="admonition note">
@@ -153,12 +158,13 @@ and the trailing &#8220;/&#8221;:</p>
 </div>
 </div>
 </div>
+</div>
 <div class="section" id="dataset-cache-initialization-updating">
 <h3>Dataset Cache Initialization &amp; Updating<a class="headerlink" href="#dataset-cache-initialization-updating" title="Permalink to this headline">¶</a></h3>
 <p>Calls to <cite>server:port/update</cite> will start a process to initialize newly added datasets and update older datasets that have <strong>keep up to date</strong> enabled. The admin interface does not initialize new datasets, it only adds the corresponding metadata into the database.</p>
-<p>This initialization and update process can also be started from the command line using the command this command. This what the call to <cite>server:port/update</cite> does in the back end.</p>
-<blockquote>
-<div>cd path/to/sci-wms/src/pywms &amp;&amp; /path/to/your/python manage.py updatecache</div></blockquote>
+<p>This initialization and update process can also be started from the command line using the command this command. This what the call to <cite>server:port/update</cite> does in the back end.:</p>
+<div class="highlight-python"><pre>cd path/to/sci-wms/src/pywms &amp;&amp; /path/to/your/python manage.py updatecache</pre>
+</div>
 <p>This process builds and updates the proper files outlined in this <strong>Topology Cache</strong> section. <strong>It is probably beneficial to set a cron job that does this routinely every *X* hours on the deployment server.</strong></p>
 <p>This <cite>manage.py updatecache</cite> call actually calls methods in  <cite>grid_init_script.py</cite> (<strong>which is not a script anymore</strong>). This file contains some hacky only vaugly CFish readers to interpret the source file or endpoint and generate the topology cache. Ultimately we should complement the <em>just sort of OK</em> readers with the appropriate <em>perfect CF-UGRID</em> and GRID readers. This will be more important as full support for ROMS grids is added.</p>
 </div>
@@ -186,7 +192,12 @@ and the trailing &#8220;/&#8221;:</p>
 <li><a class="reference internal" href="#server-metadata">Server metadata</a></li>
 <li><a class="reference internal" href="#virtual-layers">Virtual layers</a></li>
 <li><a class="reference internal" href="#wmstest-functionality"><em>&#8216;/wmstest&#8217;</em> Functionality</a></li>
-<li><a class="reference internal" href="#topology-cache">Topology Cache</a></li>
+<li><a class="reference internal" href="#topology-cache">Topology Cache</a><ul>
+<li><a class="reference internal" href="#spatial-tree-idx-and-dat">Spatial Tree (.idx and .dat)</a></li>
+<li><a class="reference internal" href="#netcdf-nc">NetCDF (.nc)</a></li>
+<li><a class="reference internal" href="#bounding-polygon-domain">Bounding Polygon (.domain)</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#dataset-cache-initialization-updating">Dataset Cache Initialization &amp; Updating</a></li>
