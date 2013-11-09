@@ -16,3 +16,6 @@ src/pywms/sciwms_wms.log
 
 # Local configuration file (sdk path, etc)
 local.properties
+
+# Mac Stuff
+.DS_Store

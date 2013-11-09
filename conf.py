@@ -41,7 +41,7 @@ master_doc = 'docs'
 
 # General information about the project.
 project = u'SCI-WMS'
-copyright = u'2013, Alexander Crosby'
+copyright = u'2013, RPS ASA'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
