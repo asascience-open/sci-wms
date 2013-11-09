@@ -33,7 +33,7 @@ Community
 Download
 ========
 
-`Download the compressed project and unpack anywhere. <http://acrosby.github.com/sci-wms>`_ This is where the installation will live.
+`Download the compressed project and unpack anywhere. <https://github.com/asascience-open/sci-wms>`_ This is where the installation will live.
 
 Install the following Python dependencies using ``pip``, ``easy_install``, or equivalent. 
 
@@ -89,6 +89,6 @@ Run the following command to run the tests from the command line::
 Issues
 =======
 
-Look at https://github.com/acrosby/sci-wms/issues?state=open for a list of known issues and problems.
+Look at https://github.com/asascience-open/sci-wms/issues?state=open for a list of known issues and problems.
 
 
