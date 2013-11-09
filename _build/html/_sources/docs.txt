@@ -36,3 +36,8 @@ Features
 * Support for groups of datasets
 * Topologically correct GetFeatureInfo querying on unstructured meshes and regular grids
 
+
+=========
+Authors
+=========
+.. codeauthor:: Alex Crosby <https://github.com/acrosby>
