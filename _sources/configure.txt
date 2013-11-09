@@ -105,7 +105,8 @@ The topology cache is an important optimization that speeds up response times fo
 
 Each file has a name that is taken directly from the SCI-WMS **Dataset**'s **'Name'**.
 
-####Spatial Tree (.idx and .dat)
+Spatial Tree (.idx and .dat)
+............................
 
 These files contain serialized *RTree* spatial kd-tree objects that are used for quickly making nearest neighbor queries as part of GetFeatureInfo requests. 
 
@@ -113,14 +114,16 @@ These are necessary for large unstructured meshes, but are also used for the log
 
 These files are constructed once when the dataset is added, and then not updated subsequently even if **Keep up to date** is toggled for the dataset.
 
-####NetCDF (.nc)
+NetCDF (.nc)
+............
 
 This file contains the up-to-date coordinate variable data for the dataset. This is typically Latitude/Longitude, and Time. For forecasts that are routinely updates, the time variable typically is growing with each update.
 
 .. note::
     For unstructured meshes the nodal vertex coordinates of the elements as well of the coodinates of the element centers are stored here.
 
-####Bounding Polygon (.domain)
+Bounding Polygon (.domain)
+..........................
 
 This file is a Python dump of a Shapely polygon object that represents the maximum-extent bounding polygon of an unstructured mesh dataset.
 
@@ -136,10 +139,9 @@ Dataset Cache Initialization & Updating
 
 Calls to `server:port/update` will start a process to initialize newly added datasets and update older datasets that have **keep up to date** enabled. The admin interface does not initialize new datasets, it only adds the corresponding metadata into the database.
 
-This initialization and update process can also be started from the command line using the command this command. This what the call to `server:port/update` does in the back end.
+This initialization and update process can also be started from the command line using the command this command. This what the call to `server:port/update` does in the back end.::
 
     cd path/to/sci-wms/src/pywms && /path/to/your/python manage.py updatecache
-
 
 This process builds and updates the proper files outlined in this **Topology Cache** section. **It is probably beneficial to set a cron job that does this routinely every *X* hours on the deployment server.**
 
