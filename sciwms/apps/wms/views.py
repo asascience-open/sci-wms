@@ -278,7 +278,7 @@ def add_dataset(dataset_endpoint = None, dataset_id = None,
             test_style = dataset_test_style,
             display_all_timesteps = display_all_timesteps)
 
-    if member_of_groups:
+    if memberof_groups:
         memberof_groups.split(",")
         for groupname in memberof_groups:
             if len(list(Group.objects.filter(name = groupname))) > 0:
