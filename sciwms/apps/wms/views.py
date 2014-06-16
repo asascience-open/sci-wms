@@ -239,6 +239,62 @@ def add(request):
     logout_view(request)
 
 
+def add_dataset(dataset_endpoint = None, dataset_id = None,
+                dataset_title = None, dataset_abstract = None,
+                dataset_test_layer="etamax",
+                dataset_test_style="pcolor_average_jet_None_None_grid_False",
+                display_all_timesteps = False,
+                dataset_update = False,
+                update_cache = True,
+                memberof_groups = None):
+    """
+    Function to add a dataset (DAP endpoint) to the Django db.
+    dataset_endpoint         (string) : uri
+    dataset_id               (string) :
+       name/id to use. No special characters or spaces ('_','0123456789' and A-Z are allowed)
+    dataset_title            (string) : Human readable title
+    dataset_abstract         (string) : Short description of dataset
+    display_all_timesteps    (bool)   : flag for displaying timesteps
+    dataset_update           (bool)   : Keep up to date
+    memberof_groups          (string) : group id
+    """
+      
+    dataset = None
+    if len(list(Dataset.objects.filter(name=dataset_id))) > 0:
+        dataset = Dataset.objects.get(name=dataset_id)
+        dataset.abstract = dataset_abstract
+        dataset.uri = dataset_endpoint
+        dataset.keep_up_to_date = dataset_update
+        dataset.test_layer = dataset_test_layer
+        dataset.test_style = dataset_test_style
+        dataset.display_all_timesteps = display_all_timesteps
+    else:
+        dataset = Dataset.objects.create(
+            name = dataset_id, title = dataset_title,
+            abstract = dataset_abstract,
+            uri = dataset_endpoint,
+            keep_up_to_date = dataset_update,
+            test_layer = dataset_test_layer,
+            test_style = dataset_test_style,
+            display_all_timesteps = display_all_timesteps)
+
+    if memberof_groups:
+        memberof_groups.split(",")
+        for groupname in memberof_groups:
+            if len(list(Group.objects.filter(name = groupname))) > 0:
+                group = Group.objects.get(name = groupname)
+                dataset.groups.add(group)
+            
+    dataset.save()
+    
+    if update_cache:
+        logger.debug("Updating Cache")
+        dataset.update_cache()
+
+    logger.debug("Success: Database updated with %s "% (dataset_id))
+                 
+    return True
+
 def add_to_group(request):
     if authenticate_view(request):
         dataset_id = request.GET.get("id", None)
