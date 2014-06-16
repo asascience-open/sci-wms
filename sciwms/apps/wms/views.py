@@ -258,6 +258,7 @@ def add_dataset(dataset_endpoint = None, dataset_id = None,
     dataset_update           (bool)   : Keep up to date
     memberof_groups          (string) : group id
     """
+      
     dataset = None
     if len(list(Dataset.objects.filter(name=dataset_id))) > 0:
         dataset = Dataset.objects.get(name=dataset_id)
@@ -276,11 +277,13 @@ def add_dataset(dataset_endpoint = None, dataset_id = None,
             test_layer = dataset_test_layer,
             test_style = dataset_test_style,
             display_all_timesteps = display_all_timesteps)
-    
-    for groupname in memberof_groups:
-        if len(list(Group.objects.filter(name = groupname))) > 0:
-            group = Group.objects.get(name = groupname)
-            dataset.groups.add(group)
+
+    if member_of_groups:
+        memberof_groups.split(",")
+        for groupname in memberof_groups:
+            if len(list(Group.objects.filter(name = groupname))) > 0:
+                group = Group.objects.get(name = groupname)
+                dataset.groups.add(group)
             
     dataset.save()
     
@@ -288,7 +291,7 @@ def add_dataset(dataset_endpoint = None, dataset_id = None,
         logger.debug("Updating Cache")
         dataset.update_cache()
 
-    logger.debug("Success: Databes updated with %s "% (dataset_id))
+    logger.debug("Success: Database updated with %s "% (dataset_id))
                  
     return True
 
