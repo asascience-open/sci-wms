@@ -7,7 +7,7 @@ import traceback
 
 from owslib import fes, csw
 from netCDF4 import Dataset as ncDataset
-
+from netCDF4 import num2date, date2num
 from django.conf import settings
 from django.db.models import Q
 
@@ -15,6 +15,7 @@ from sciwms.apps.wms.models import Dataset as sciwmsDataset
 from sciwms.libs.data.caching import update_dataset_cache
 
 import json
+import numpy as np
 
 output_path = os.path.join(settings.PROJECT_ROOT, 'logs', 'sciwms_wms.log')
 logger = multiprocessing.get_logger()
@@ -30,8 +31,6 @@ def json_helper(name, uri):
     layers = ['eta', 'etavmax', 'u', 'v']
     styles = ['pcolor_average_jet_None_None_grid_False']
 
-    resp = {}    
-
     storm = 'UNKNOWN'
     for strm in storms:
         if strm.lower() in uri.lower():
@@ -43,15 +42,54 @@ def json_helper(name, uri):
     for layer in layers:
         if layer in nc.variables.keys():
             dlayers[layer] = 'pcolor_average_jet_None_None_grid_False'
-    
+
+
+    spatial = []
+    try:
+        lat_obj = nc.variables.get('lat')
+        lon_obj = nc.variables.get('lon')
+        lat = lat_obj[:]
+        lon = lon_obj[:]
+        spatial = [np.nanmin(lon), np.nanmin(lat), np.nanmax(lon), np.nanmax(lat)]
+    except:
+        pass
+
+        
+    print '{0} spatial = {1}'.format(name, spatial)
+
+
+
+    temporal = []
+    time_obj = nc.variables.get('time')
+    if time_obj:
+        mykwargs = {}
+        if hasattr(time_obj, 'units'):
+            mykwargs['units'] = time_obj.units
+            print "units = {0}".format(mykwargs['units'])
+        if hasattr(time_obj, 'calendar'):
+            mykwargs['calendar'] = time_obj.calendar
+
+        times = time_obj[:]
+        min_time = np.nanmin(times)
+        max_time = np.nanmax(times)
+        print "min_time = {0}, max_time = {0}".format(min_time, max_time)
+
+        temporal.append(num2date(min_time, **mykwargs))
+        temporal.append(num2date(max_time, **mykwargs))
+
+        logger.info("{0} temporal extent = {1}".format(name, temporal))
+        print "{0} temporal extent = {1}".format(name, temporal)
     
     split_url = uri.split("/")
-    resp['name']      = name
-    resp['org_model'] = split_url[-2]
-    resp['category']  = split_url[-3]
-    resp['storm']     = storm
-    resp['url']       = uri
-    resp['layers']    = dlayers
+    
+    resp = {name:{}}    
+    resp[name]['org_model'] = split_url[-2]
+    resp[name]['category']  = split_url[-3]
+    resp[name]['storm']     = storm
+    resp[name]['url']       = uri
+    resp[name]['layers']    = dlayers
+    resp[name]['temporal']  = temporal
+    resp[name]['spatial']   = spatial
 
     return resp
 

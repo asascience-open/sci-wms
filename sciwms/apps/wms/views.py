@@ -67,7 +67,7 @@ from sciwms.apps.wms.models import Dataset, Server, Group, VirtualLayer
 output_path = os.path.join(settings.PROJECT_ROOT, 'logs', 'sciwms_wms.log')
 # Set up Logger
 logger = multiprocessing.get_logger()
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 handler = logging.FileHandler(output_path)
 formatter = logging.Formatter(fmt='[%(asctime)s] - <<%(levelname)s>> - |%(message)s|')
 handler.setFormatter(formatter)
@@ -80,7 +80,6 @@ def crossdomain(request):
         response.write(f.read())
     return response
 
-
 def datasets(request):
 
     try:
@@ -92,8 +91,18 @@ def datasets(request):
         resp = []
         for d in Dataset.objects.all():
             resp.append(dataset.json)
+    
+    resp = json.dumps(resp)
+    callback = request.GET.get('callback',False)
+    if callback:
+        logger.info("Returning jsonp")
+        resp = str(callback) + '(' + resp + ')'
+        mimetype = 'application/javascript'
+    else:
+        logger.info("Returning json string")
+        mimetype = 'application/json'
 
-    return HttpResponse(json.dumps(resp), mimetype='application/json')
+    return HttpResponse(resp, mimetype=mimetype)
 
 
 
