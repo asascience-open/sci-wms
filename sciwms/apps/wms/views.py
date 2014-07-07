@@ -82,10 +82,19 @@ def crossdomain(request):
 
 
 def datasets(request):
-    from django.core import serializers
-    datasets = Dataset.objects.all()
-    data = serializers.serialize('json', datasets)
-    return HttpResponse(data, mimetype='application/json')
+
+    try:
+        logger.info("/wms/datasets/ found json_all")
+        d = Dataset.objects.get(name="json_all")
+        resp = d.json
+    except:
+        logger.info("/wms/datasets/ json_all not found, using loop")
+        resp = []
+        for d in Dataset.objects.all():
+            resp.append(dataset.json)
+
+    return HttpResponse(json.dumps(resp), mimetype='application/json')
+
 
 
 def grouptest(request, group):
