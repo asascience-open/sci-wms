@@ -5,6 +5,8 @@
 *.pyc
 *.log
 
+env/
+
 # Default Topology location
 sciwms/apps/wms/topology/
 sciwms/sci-wms.db

@@ -22,19 +22,19 @@ from django.conf.urls import patterns, include, url
 from django.conf import settings
 
 # Uncomment the next two lines to enable the admin:
-from django.contrib import admin
-admin.autodiscover()
+#from django.contrib import admin
+#admin.autodiscover()
 
 urlpatterns = patterns( '',
-                        url(r'^admin/', include(admin.site.urls)),
-                        url(r'^admin', include(admin.site.urls)),
-                        url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-                        url(r'^admin/doc', include('django.contrib.admindocs.urls')),
+                        #url(r'^admin/', include(admin.site.urls)),
+                        #url(r'^admin', include(admin.site.urls)),
+                        #url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+                        #url(r'^admin/doc', include('django.contrib.admindocs.urls')),
 
                         url(r'^index', 'sciwms.apps.wms.views.index', name="index"),
                         url(r'^$', 'sciwms.apps.wms.views.index', name="index"),
 
-                        url(r'^crossdomain\.xml$', 'sciwms.apps.wms.views.crossdomain'),
+                        #url(r'^crossdomain\.xml$', 'sciwms.apps.wms.views.crossdomain'),
 
                         url(r'^wms$', 'django.shortcuts.redirect', {'/wms/'}),
                         url(r'^wms/', include('sciwms.apps.wms.urls')),

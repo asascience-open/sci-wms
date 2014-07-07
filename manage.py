@@ -22,6 +22,7 @@ import os
 import sys
 
 if __name__ == "__main__":
+
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sciwms.settings.dev")
 
     if len(sys.argv) > 1 and (sys.argv[1] == "runserver" or sys.argv[1] == "test"):
