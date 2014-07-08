@@ -25,6 +25,35 @@ formatter = logging.Formatter(fmt='[%(asctime)s] - <<%(levelname)s>> - |%(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+def get_temporal_extent(ncdataset):
+    time_ext = []
+
+    tobj = ncdataset.variables.get('time')
+    if timeobj:
+        tkwargs = {}
+
+        if hasattr(tobj, 'units'):
+            tkwargs['units'] = tobj.units
+
+        if hasattr(tobj, 'calendar'):
+            tkwargs['calendar'] = tobj.calendar.lower()
+
+        times = tobj[:]
+        dates = []
+        for t in times:
+            #Some datasets have nonsensical values or will fail the num2date conversion
+            #just skip dates we can't convert
+            try:
+                date = num2date(t, **tkwargs)
+                dates.append(date)
+            except:
+                pass
+
+        if len(dates) >= 2:
+            time_ext = [dates[0], dates[-1]]
+
+    return time_ext 
+
 def json_helper(name, uri):
     storms = ['IKE', 'RITA', '2005', '2007', '2010', 'EXTRATROPICAL CYCLONES']
 
