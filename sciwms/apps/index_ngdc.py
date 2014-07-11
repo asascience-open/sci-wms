@@ -23,7 +23,7 @@ from sciwms.libs.data.caching import update_dataset_cache
 import json
 import numpy as np
 
-output_path = os.path.join(settings.PROJECT_ROOT, 'logs', 'index_ngdc.log')
+output_path = os.path.join(settings.PROJECT_ROOT, 'logs', 'sciwms_wms.log')
 logger = multiprocessing.get_logger()
 logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(output_path)
@@ -188,6 +188,7 @@ for i, (name, record) in enumerate(csw_catalogue.records.iteritems()):
 
     if nc:
         spatial_ext = get_spatial_extent(nc, legal_name)
+        spatial_ext = [str(el) for el in spatial_ext]
         time_ext = get_temporal_extent(nc)
         layers = get_layers(nc)
         
