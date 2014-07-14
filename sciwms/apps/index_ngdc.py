@@ -89,10 +89,19 @@ def get_temporal_extent(nc):
 def get_layers(nc):
     layers = {}
     default_scalar_plot = "pcolor_average_jet_None_None_grid_False"
-    
+    default_vector_plot = "vectors_average_jet_None_None_grid_40"
     #MISC
-    # if 'u' and 'v' in nc.variables:
-    #     layers['u,v'] = default_scalar_plot
+    if 'u' and 'v' in nc.variables:
+        layers['u,v'] = default_vector_plot
+
+    if 'temp' in nc.variables:
+        layers['temp'] = default_scalar_plot
+
+    if 'zeta' in nc.variables:
+        layers['zeta'] = default_scalar_plot
+
+    if 'zeta_max' in nc.variables:
+        layers['zeta_max'] = default_scalar_plot
 
     #SLOSH Variables
     if 'depth' in nc.variables:
@@ -101,6 +110,9 @@ def get_layers(nc):
 
     if 'etamax' in nc.variables:
         layers['etamax'] = default_scalar_plot    
+
+    # if 'eta_max' in nc.variables:
+    #     layers['eta_max'] = default_scalar_plot
 
     #ADCIRC Variables
     if 'zeta_max' in nc.variables:
@@ -130,7 +142,6 @@ def get_layers(nc):
 
     return layers
         
-
 reqcnt = 0
 while reqcnt < 2:
     try:
@@ -193,18 +204,61 @@ for i, (name, record) in enumerate(csw_catalogue.records.iteritems()):
         layers = get_layers(nc)
         
 
-        if len(time_ext):
-            tlist = ["{0}".format(time_ext[0]), "{0}".format(time_ext[1])]
+        # if len(time_ext):
+        #     tlist = ["{0}".format(time_ext[0]), "{0}".format(time_ext[1])]
 
-        logger.debug("{0}: {1}, {2}".format(legal_name, spatial_ext, tlist))
+        logger.debug("{0}: {1}, {2}".format(legal_name, spatial_ext, time_ext))
 
+
+        storms = ['IKE', 'RITA', '2005', '2007', '2010', 'EXTRATROPICAL CYCLONES']
+        storm = ""
+        for strm in storms:
+            if strm.lower() in urls[legal_name].lower():
+                storm = strm
+                break
+                
         split_url = urls[legal_name].split("/")
         js = {legal_name:{}}
         js[legal_name]['org_model'] = split_url[-2]
         js[legal_name]['category']  = split_url[-3]
         js[legal_name]['spatial']   = spatial_ext
-        js[legal_name]['temporal']  = tlist
+        js[legal_name]['temporal']  = time_ext
         js[legal_name]['layers']    = layers
+        js[legal_name]['storm']     = storm
+        
+        #default layer for plotting in web-portal
+        org_model = js[legal_name]['org_model']
+        default_layer = ''
+        if org_model.lower() == 'umass_fvcom':
+            default_layer = 'zeta'
+            
+        elif org_model.lower() == 'usf_fcvom':
+            default_layer = 'maxele'
+
+        elif org_model.lower() == 'mdl_slosh':
+            default_layer = 'etamax'
+
+        elif org_model.lower() == 'und_adcirc':
+            default_layer = 'zeta_max'
+            if not 'zeta_max' in nc.variables:
+                if 'zeta' in nc.variables:
+                    default_layer = 'zeta'
+            
+        
+        elif org_model.lower() == 'ums_selfe':
+            default_layer = 'elev'
+
+        elif org_model.lower() == 'dal_roms':
+            default_layer = 'temp'
+
+        elif org_model.lower() == 'tamu_roms':
+            default_layer = 'temp'
+
+        if default_layer in js[legal_name]['layers']:
+            js[legal_name]['default_layer'] = default_layer
+        else:
+            js[legal_name]['default_layer'] = ""
+            
 
         dataset.json = js
 
@@ -215,9 +269,6 @@ for i, (name, record) in enumerate(csw_catalogue.records.iteritems()):
             update_dataset_cache(dataset)
             nupdated += 1
             logger.debug("Done Updating Topology {0}".format(legal_name))
-
-        
-
 
 try:
     dataset = dbDataset.objects.get(name="json_all")
