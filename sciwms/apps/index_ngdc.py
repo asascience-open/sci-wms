@@ -243,8 +243,7 @@ for i, (name, record) in enumerate(csw_catalogue.records.iteritems()):
             if not 'zeta_max' in nc.variables:
                 if 'zeta' in nc.variables:
                     default_layer = 'zeta'
-            
-        
+                    
         elif org_model.lower() == 'ums_selfe':
             default_layer = 'elev'
 
@@ -254,11 +253,17 @@ for i, (name, record) in enumerate(csw_catalogue.records.iteritems()):
         elif org_model.lower() == 'tamu_roms':
             default_layer = 'temp'
 
+        #hard-coded fringe datasets
+        elif legal_name.lower() == "shelf_hypoxia_NOAA_NGOM_2005_2011_NGOM".lower():
+            default_layer = 'temp'
+
+        elif legal_name.lower() == "estuarine_hypoxia_VIMS_CBOFS_2004_2005".lower():
+            default_layer = 'temp'
+
         if default_layer in js[legal_name]['layers']:
             js[legal_name]['default_layer'] = default_layer
         else:
             js[legal_name]['default_layer'] = ""
-            
 
         dataset.json = js
 
