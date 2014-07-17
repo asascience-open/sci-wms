@@ -267,6 +267,8 @@ for i, (name, record) in enumerate(csw_catalogue.records.iteritems()):
 
         dataset.json = js
 
+        dataset.save()
+
         json_all.append(js)
 
         if update_topology:
