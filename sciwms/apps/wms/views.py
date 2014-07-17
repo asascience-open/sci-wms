@@ -85,9 +85,21 @@ def crossdomain(request):
 
 
 def datasets(request):
-    from django.core import serializers
-    datasets = Dataset.objects.all()
-    data = serializers.serialize('json', datasets)
+    
+    try:
+        js_obj = Dataset.objects.get(name='json_all')
+
+        data = json.dumps(js_obj.json)
+        if 'callback' in request.REQUEST:
+            data = "{0}({1})".format(request.REQUEST['callback'], data)
+        logger.info("Returning json_all object")
+    except:
+        from django.core import serializers
+        datasets = Dataset.objects.all()
+        data = serializers.serialize('json', datasets)
+        logger.info("Returning serialized datasets.")
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        logger.info(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
     return HttpResponse(data, mimetype='application/json')
 
 
