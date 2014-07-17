@@ -1304,14 +1304,21 @@ def getMap(request, dataset):
         sub_idx = get_lat_lon_subset_idx(lat,lon,lonmin,latmin,lonmax,latmax)
         nv_subset_idx = get_nv_subset_idx(nv, sub_idx)
         # logger.debug(nv_subset_idx.shape)
+
+        #TODO IMPORTANT!!!! IF len(nv_subset_idx): SEND TRANSPARENT IMAGE!!!
+        
         triag_subset = Tri.Triangulation(lat, lon, triangles=nv[nv_subset_idx])
         logger.info("getMap Computing Triangulation Subset Complete.")
 
         logger.info("getMap retrieving variables")
         datasetnc = netCDF4.Dataset(url,'r')
+
+        #THIS IS THE LAYER
+        #There can be 2 variables in get request e.g. (u,v)
+        #TODO: Must expand to multiple layers
         data = datasetnc.variables[variables[0]][:]
 
-
+        #TIME NEEDS TO PARSED AND HANDLED
         
         fig = Figure(dpi=80, facecolor='none', edgecolor='none')
         fig.set_alpha(0)
