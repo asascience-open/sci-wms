@@ -70,7 +70,7 @@ import numpy as np
 output_path = os.path.join(settings.PROJECT_ROOT, 'logs', 'sciwms_wms.log')
 # Set up Logger
 logger = multiprocessing.get_logger()
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(output_path)
 formatter = logging.Formatter(fmt='[%(asctime)s] - <<%(levelname)s>> - |%(message)s|')
 handler.setFormatter(formatter)
@@ -1291,6 +1291,7 @@ def getMap(request, dataset):
         nv  = ug.faces[:]
         sub_idx = get_lat_lon_subset_idx(lat,lon,lonmin,latmin,lonmax,latmax)
         nv_subset_idx = get_nv_subset_idx(nv, sub_idx)
+        # logger.debug(nv_subset_idx.shape)
         triag_subset = Tri.Triangulation(lat, lon, triangles=nv[nv_subset_idx])
         logger.info("getMap Computing Triangulation Subset Complete.")
 
