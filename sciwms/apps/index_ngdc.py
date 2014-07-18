@@ -39,17 +39,17 @@ timeout = 120
 def get_spatial_extent(nc, legal_name):
     try:
         if 'lat' and 'lon' in nc.variables:
-            lat = nc.variables['lat'][:]
             lon = nc.variables['lon'][:]
+            lat = nc.variables['lat'][:]
         elif 'x' and 'y' in nc.variables:
-            lat = nc.variables['x'][:]
-            lon = nc.variables['y'][:]
+            lon = nc.variables['x'][:]
+            lat = nc.variables['y'][:]
         elif 'lat_u' and 'lon_u' in nc.variables:
-            lat = nc.variables['lat_u'][:]
             lon = nc.variables['lon_u'][:]
+            lat = nc.variables['lat_u'][:]
         elif 'lat_v' and 'lon_v' in nc.variables:
-            lat = nc.variables['lat_v'][:]
             lon = nc.variables['lon_v'][:]
+            lat = nc.variables['lat_v'][:]
         else:
             logger.info("Couldn't Compute Spatial Extent {0}".format(legal_name))
             return []
