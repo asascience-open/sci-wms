@@ -1274,7 +1274,7 @@ def getMap(request, dataset):
         import matplotlib.tri as Tri
         #THIS IS ADDED BY BRANDON TO ADD SUPPORT FOR PYUGRID!!!!
         topology_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc')
-        logger.info("Trying to load pyugrid cache")
+        logger.info("Trying to load pyugrid cache {0}".format(dataset))
         ug = pyugrid.UGrid.from_ncfile(topology_path)
         logger.info("Loaded pyugrid cache")
 
@@ -1305,18 +1305,20 @@ def getMap(request, dataset):
         nv_subset_idx = get_nv_subset_idx(nv, sub_idx)
         # logger.debug(nv_subset_idx.shape)
 
-        #TODO IMPORTANT!!!! IF len(nv_subset_idx): SEND TRANSPARENT IMAGE!!!
+        #TODO IMPORTANT!!!! IF len(nv_subset_idx) == 0: SEND TRANSPARENT IMAGE!!!
         
         triag_subset = Tri.Triangulation(lat, lon, triangles=nv[nv_subset_idx])
         logger.info("getMap Computing Triangulation Subset Complete.")
 
-        logger.info("getMap retrieving variables")
+        
         datasetnc = netCDF4.Dataset(url,'r')
 
         #THIS IS THE LAYER
         #There can be 2 variables in get request e.g. (u,v)
         #TODO: Must expand to multiple layers
+        logger.info("getMap retrieving variables {0}".format(variables))
         data = datasetnc.variables[variables[0]][:]
+        logger.info("getMap finished retrieving variables")
 
         #TIME NEEDS TO PARSED AND HANDLED
         
@@ -1337,7 +1339,11 @@ def getMap(request, dataset):
         # logger.debug("lon.shape  = {0}".format(lon.shape))
         # print data
 
-        lvls = np.arange(data.min(), data.max(), 0.25)
+        #NEED TO ADD CHECKS FOR EMPTY DATA OR IF LVLS ARE INVALID VARIABLES!
+        numlvls = 15
+        lvls = np.linspace(data.min(), data.max(), numlvls)
+        # lvls = np.arange(data.min(), data.max(), 0.25)
+        logger.info("lvls.shape = {0}, lvls.min() = {1}, lvls.max() = {2}".format(lvls.shape, lvls.min(), lvls.max()))
         # print "data.min = {0}".format(data.min())
         # print "data.max = {0}".format(data.max())
         # print "levels = {0}".format(lvls)
