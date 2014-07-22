@@ -1462,7 +1462,9 @@ def getMap(request, dataset):
             logger.info("len(data) = {0}".format(len(data)))
             logger.info("data[0].shape = {0}".format(data[0].shape))
             logger.info("data[1].shape = {0}".format(data[1].shape))
-            response = ugrid_quiver_response(lon, lat, data[0], data[1], lonmin, latmin, lonmax, latmax, width, height)
+            response = ugrid_quiver_response(
+                lon[sub_idx], lat[sub_idx], data[0][sub_idx], data[1][sub_idx],
+                lonmin, latmin, lonmax, latmax, width, height)
         else:
             #don't know how to handle more than 2 variables
             logger.info("Cannot handle more than 2 variables per request.")
