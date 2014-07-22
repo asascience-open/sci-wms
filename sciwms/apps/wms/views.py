@@ -972,43 +972,50 @@ def getFeatureInfo(request, dataset):
         logger.info("Loaded pyugrid cache")
 
         # UGRID variables
-        lat = ug.nodes[:,0]
-        lon = ug.nodes[:,1]
+        lon = ug.nodes[:,0]
+        lat = ug.nodes[:,1]
         nv  = ug.faces[:]
 
         # rindex, create if none exists yet
-        nodes_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '.nodes')
+        nodes_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '_nodes')
         if os.path.exists(nodes_path):
             tree = rindex.Index(nodes_path)
+            logger.info('node index found %s' % nodes_path)
         else:
             def generator_nodes():
                 for i, c in enumerate(zip(lon, lat, lon, lat)):
                     yield(i, c, None)
-            tree = index.Index(nodes_path, generator_nodes(), overwrite=True)
+            logger.info('indexing nodes %s' % nodes_path)
+            tree = rindex.Index(nodes_path, generator_nodes(), overwrite=True)
+            logger.info('nodes indexed')
 
         # find closest node or cell (only doing node for now)
-        nindex = tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True)
+        nindex = list(tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True))[0]
         selected_longitude, selected_latitude = tuple(nindex.bbox[:2])
         index = nindex.id
         tree.close()
-
+        # this is UGRID
         ugrid = True
     
     # ------------------------------------------------------------------------------------------------------------ Not pyUGRID
     except: # default to previous workflow for non UGRID
-
         # structured grids (where 'nodes' are the structured points)
         topology = netCDF4.Dataset(os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc'))
         tree = rindex.Index(dataset+'_nodes')
         lats = topology.variables['lat'][:]
         lons = topology.variables['lon'][:]
-        nindex = tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True)
+        nindex = list(tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True))[0]
         selected_longitude, selected_latitude = lons[nindex.object[0], nindex.object[1]][0], lats[nindex.object[0], nindex.object[1]][0]
         index = nindex.object
         tree.close()
         index = numpy.asarray(index)
+        topology.close()
 
-    # nothing UGRID related below? TODO: double check
+    # nothing UGRID related below
+
+    url = Dataset.objects.get(name=dataset).path()
+    datasetnc = netCDF4.Dataset(url)
+
     try:
         TIME = request.GET["time"]
         if TIME == "":
@@ -1029,8 +1036,8 @@ def getFeatureInfo(request, dataset):
     if len(TIMES) > 1:
         datestart = datetime.datetime.strptime(TIMES[0], "%Y-%m-%dT%H:%M:%S" )
         dateend = datetime.datetime.strptime(TIMES[1], "%Y-%m-%dT%H:%M:%S" )
-        times = topology.variables['time'][:]
-        time_units = topology.variables['time'].units
+        times = datasetnc.variables['time'][:]
+        time_units = datasetnc.variables['time'].units
         datestart = round(netCDF4.date2num(datestart, units=time_units))
         dateend = round(netCDF4.date2num(dateend, units=time_units))
         time1 = bisect.bisect_right(times, datestart) - 1
@@ -1044,8 +1051,8 @@ def getFeatureInfo(request, dataset):
             time = [len(times) - 1]
     else:
         datestart = datetime.datetime.strptime(TIMES[0], "%Y-%m-%dT%H:%M:%S" )
-        times = topology.variables['time'][:]
-        time_units = topology.variables['time'].units
+        times = datasetnc.variables['time'][:]
+        time_units = datasetnc.variables['time'].units
         datestart = round(netCDF4.date2num(datestart, units=time_units))
         time1 = bisect.bisect_right(times, datestart) - 1
         if time1 == -1:
@@ -1069,15 +1076,14 @@ def getFeatureInfo(request, dataset):
             elif len(nc.variables[v].shape) == 2: # time, horizontal
                 return nc.variables[v][t,i]
             elif len(nc.variables[v].shape) == 1: # horizontal
-                return nc.variables[v][i]
+                return [nc.variables[v][i]]
 
-    url = Dataset.objects.get(name=dataset).path()
-    datasetnc = netCDF4.Dataset(url)
-
+    # grabbing requested variables
     varis = deque()
-    varis.append(getvar(topology, time, elevation, "time", index)) # time not in topology?
+    varis.append(getvar(datasetnc, time, elevation, "time", index)) # time not in topology?
     if ugrid == True:
         for var in QUERY_LAYERS:
+            logger.info('appending UGRID %s' % var)
             varis.append(getvar(datasetnc, time, elevation, var, index))
             try:
                 units = datasetnc.variables[var].units
@@ -1085,6 +1091,7 @@ def getFeatureInfo(request, dataset):
                 units = ""
     else:
         for var in QUERY_LAYERS:
+            logger.info('appending non-UGRID %s' % var)
             varis.append(cgrid.getvar(datasetnc, time, elevation, [var], index)[0]) # caution, this is cgrid.getvar....
         try:
             units = datasetnc.variables[QUERY_LAYERS[0]].units
@@ -1145,7 +1152,7 @@ def getFeatureInfo(request, dataset):
         http://docs.geoserver.org/latest/en/user/services/wms/reference.html#getfeatureinfo
         """
         import json
-        callback = request.GET.get("info_format", "parseResponse")
+        callback = request.GET.get("callback", "parseResponse")
         response = HttpResponse()
         output_dict = {}
         output_dict2 = {}
@@ -1198,7 +1205,6 @@ def getFeatureInfo(request, dataset):
     else:
         response = HttpResponse("Response MIME Type %s not supported at this time" % request.GET["INFO_FORMAT"].lower())
     datasetnc.close()
-    topology.close()
     return response
 
 
