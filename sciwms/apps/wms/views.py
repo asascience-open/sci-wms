@@ -1292,7 +1292,7 @@ def getMap(request, dataset):
             """
             return np.asarray(np.where(np.all(np.in1d(nv,sub_idx).reshape(nv.shape),1))).squeeze()
 
-        def get_nearest_start_time(nc):
+        def get_nearest_start_time(nc,datestart):
             time = None
             try:
                 times = nc.variables['time'][:]
@@ -1398,23 +1398,26 @@ def getMap(request, dataset):
         logger.info("Loaded pyugrid cache")    
 
         logger.info("getMap Computing Triangulation Subset")
-        lat = ug.nodes[:,0]
-        lon = ug.nodes[:,1]
+        #check that this is correct lat/lon
+        lon = ug.nodes[:,0]
+        lat = ug.nodes[:,1]
         nv  = ug.faces[:]
-        sub_idx = get_lat_lon_subset_idx(lat,lon,lonmin,latmin,lonmax,latmax)
+        sub_idx = get_lat_lon_subset_idx(lon,lat,lonmin,latmin,lonmax,latmax)
         nv_subset_idx = get_nv_subset_idx(nv, sub_idx)
+
+        logger.info("Found {0} triangles in view".format(len(nv_subset_idx)))
 
         #if no traingles insersect the field of view
         #return a transparent tile
         if (len(sub_idx) == 0) or (len(nv_subset_idx) == 0):
             logger.info("No triangles in field of view, returning empty tile.")
-            return blank_response();
+            return blank_response(width, height);
 
         triang_subset = Tri.Triangulation(lat, lon, triangles=nv[nv_subset_idx])
         logger.info("getMap Computing Triangulation Subset Complete.")
 
         datasetnc = netCDF4.Dataset(url,'r')
-        time = get_nearest_start_time(datasetnc)
+        time = get_nearest_start_time(datasetnc, datestart)
         
         logger.info("time = {0}".format(time))
         
