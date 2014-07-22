@@ -1302,7 +1302,10 @@ def getMap(request, dataset):
 
                 #goal is to find closest time index, or do we always use the "one before" or "one after"?            
                 #This mod will get the nearest element by checking the one after vs. the one before
-                time = time if abs(times[time]-datstart) < abs(time[time-1]-datestart) else time-1
+                if time == len(times):
+                    time -= 1
+                elif time != 0:
+                    time = time if abs(times[time]-datstart) < abs(time[time-1]-datestart) else time-1
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 logger.info("Dataset doesn't contain temporal dimension: "
@@ -1359,7 +1362,7 @@ def getMap(request, dataset):
             canvas.print_png(response)
             return response
 
-        def ugrid_quiver_response(triang_subset, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80):
+        def ugrid_quiver_response(lon, lat, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80):
             fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
             fig.set_alpha(0)
             fig.set_figheight(height/dpi)
@@ -1372,9 +1375,13 @@ def getMap(request, dataset):
                         suppress_ticks=True)
             m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
             
-            
-            m.ax.quiver(triang_subset.x, triang_subset.y, dx, dy, levels=lvls)
-            
+
+            mag = np.sqrt(np.sum(np.square(np.asarray([dx, dy])),0))
+            logger.info("mag.shape = {0}".format(mag.shape))
+            logger.info("mag.min() = {0}".format(mag.min()))
+            logger.info("mag.max() = {0}".format(mag.max()))
+            m.ax.quiver(lon,lat, dx, dy, mag)
+            logger.info("quiver plotted.")
             m.ax.set_xlim(lonmin, lonmax)
             m.ax.set_ylim(latmin, latmax)
             m.ax.set_frame_on(False)
@@ -1438,18 +1445,24 @@ def getMap(request, dataset):
             logger.info("getMap finished retrieving variable {0}, serving tricontourf response".format(variables))
             response = tricontourf_response(triang_subset, data, lonmin, latmin, lonmax, latmax, width, height)
         elif len(variables) == 2:
+            logger.info("len(variables) == 2")
+            logger.info("getMap retrieving variables {0}".format(variables))
             data_objs = [datasetnc.variables[v] for v in variables]
-            
-            for do in data_obj:
-                if len(data_obj.shape) == 2 and time != None:
-                    data = data_obj[time,:]
-                elif len(data_obj.shape) == 1:
-                    data = data_obj[:]
+
+            data = []
+            for do in data_objs:
+                if len(data_objs) == 2 and time != None:
+                    logger.info("do.shape = {0}".format(do.shape))
+                    data.append(do[time,:])
+                elif len(data_objs.shape) == 1:
+                    data.append(do[:])
                 else:
                     logger.info("Dimension Mismatch: data_obj.shape == {0} and time = {1}".format(data_obj.shape, time))
                     return blank_response(width, height)
-
-            
+            logger.info("len(data) = {0}".format(len(data)))
+            logger.info("data[0].shape = {0}".format(data[0].shape))
+            logger.info("data[1].shape = {0}".format(data[1].shape))
+            response = ugrid_quiver_response(lon, lat, data[0], data[1], lonmin, latmin, lonmax, latmax, width, height)
         else:
             #don't know how to handle more than 2 variables
             logger.info("Cannot handle more than 2 variables per request.")
