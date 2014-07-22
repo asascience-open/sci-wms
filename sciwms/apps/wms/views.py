@@ -1409,10 +1409,7 @@ def getMap(request, dataset):
         if (len(sub_idx) == 0) or (len(nv_subset_idx) == 0):
             logger.info("No triangles in field of view, returning empty tile.")
             return blank_response();
-            
-        # logger.debug(nv_subset_idx.shape)
 
-        #TODO IMPORTANT!!!! IF len(nv_subset_idx) == 0: SEND TRANSPARENT IMAGE!!!        
         triang_subset = Tri.Triangulation(lat, lon, triangles=nv[nv_subset_idx])
         logger.info("getMap Computing Triangulation Subset Complete.")
 
