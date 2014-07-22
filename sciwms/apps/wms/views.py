@@ -1271,13 +1271,8 @@ def getMap(request, dataset):
     logger.debug("getMap Subset Bounding Box: {0}, {1}, {2}, {3}".format(lonmin,latmin,lonmax,latmax))
 
     try:
-        import matplotlib.tri as Tri
         #THIS IS ADDED BY BRANDON TO ADD SUPPORT FOR PYUGRID!!!!
-        topology_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc')
-        logger.info("Trying to load pyugrid cache {0}".format(dataset))
-        ug = pyugrid.UGrid.from_ncfile(topology_path)
-        logger.info("Loaded pyugrid cache")
-
+        
         #THESE SHOULD BE SOMEHWERE ELSE JUST IN A RUSH NOW
         def get_lat_lon_subset_idx(lon,lat,lonmin,latmin,lonmax,latmax,padding=0.18):
             """
@@ -1297,66 +1292,181 @@ def getMap(request, dataset):
             """
             return np.asarray(np.where(np.all(np.in1d(nv,sub_idx).reshape(nv.shape),1))).squeeze()
 
+        def get_nearest_start_time(nc):
+            time = None
+            try:
+                times = nc.variables['time'][:]
+                datestart = datetime.datetime.strptime(datestart, "%Y-%m-%dT%H:%M:%S" )
+            
+                # datetime obj --> netcdf datenum
+                datestart = round(netCDF4.date2num(datestart, units=nc.variables['time'].units))  
+                logger.info("datestart = {0}".format(datestart))
+
+                #bisect_right returns the index that would maintain sorted order if
+                #the element (in this case datestart) was inserted to the right of an element
+                time = bisect.bisect_right(times,datestart)
+
+                #goal is to find closest time index, or do we always use the "one before" or "one after"?            
+                #This mod will get the nearest element by checking the one after vs. the one before
+                time = time if abs(times[time]-datstart) < abs(time[time-1]-datestart) else time-1
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                logger.info("Dataset doesn't contain temporal dimension: "
+                            + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+            finally:
+                del times
+            
+            return time
+
+        def blank_response(width, height, dpi=5):
+            """
+            Return a transparent (blank) response. Used for tiles with no intersection
+            with the current view or for some other error.
+            """
+            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
+            fig.set_alpha(0)
+            ax = fig.add_axes([0, 0, 1, 1])
+            #I don't know why height and width is divided by dpi,
+            #this is left over from old sciwms code
+            #maybe response needs to be in units of inches?
+            fig.set_figheight(height/dpi)
+            fig.set_figwidth(width/dpi)
+            ax.set_frame_on(False)
+            ax.set_clip_on(False)
+            ax.set_position([0, 0, 1, 1])
+            canvas = FigureCanvasAgg(fig)
+            response = HttpResponse(content_type='image/png')
+            canvas.print_png(response)
+
+            return response
+
+        def tricontourf_response(triang_subset, data, lonmin, latmin, lonmax, latmax, width, height, dpi=80, nlvls = 15):
+            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
+            fig.set_alpha(0)
+            fig.set_figheight(height/dpi)
+            fig.set_figwidth(width/dpi)
+            projection = request.GET["projection"]
+            m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
+                        urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
+                        resolution=None,
+                        lat_ts = 0.0,
+                        suppress_ticks=True)
+            m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
+            lvls = np.linspace(data.min(), data.max(), nlvls)
+            logger.info("lvls.shape = {0}, lvls.min() = {1}, lvls.max() = {2}".format(lvls.shape, lvls.min(), lvls.max()))
+            m.ax.tricontourf(triang_subset, data, levels=lvls)
+            m.ax.set_xlim(lonmin, lonmax)
+            m.ax.set_ylim(latmin, latmax)
+            m.ax.set_frame_on(False)
+            m.ax.set_clip_on(False)
+            m.ax.set_position([0, 0, 1, 1])
+            canvas = FigureCanvasAgg(fig)
+            response = HttpResponse(content_type='image/png')
+            canvas.print_png(response)
+            return response
+
+        def ugrid_quiver_response(triang_subset, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80):
+            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
+            fig.set_alpha(0)
+            fig.set_figheight(height/dpi)
+            fig.set_figwidth(width/dpi)
+            projection = request.GET["projection"]
+            m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
+                        urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
+                        resolution=None,
+                        lat_ts = 0.0,
+                        suppress_ticks=True)
+            m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
+            
+            
+            m.ax.quiver(triang_subset.x, triang_subset.y, dx, dy, levels=lvls)
+            
+            m.ax.set_xlim(lonmin, lonmax)
+            m.ax.set_ylim(latmin, latmax)
+            m.ax.set_frame_on(False)
+            m.ax.set_clip_on(False)
+            m.ax.set_position([0, 0, 1, 1])
+            canvas = FigureCanvasAgg(fig)
+            response = HttpResponse(content_type='image/png')
+            canvas.print_png(response)
+            return response
+        
+        import matplotlib.tri as Tri
+        topology_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc')
+        logger.info("Trying to load pyugrid cache {0}".format(dataset))
+        ug = pyugrid.UGrid.from_ncfile(topology_path)
+        logger.info("Loaded pyugrid cache")    
+
         logger.info("getMap Computing Triangulation Subset")
         lat = ug.nodes[:,0]
         lon = ug.nodes[:,1]
         nv  = ug.faces[:]
         sub_idx = get_lat_lon_subset_idx(lat,lon,lonmin,latmin,lonmax,latmax)
         nv_subset_idx = get_nv_subset_idx(nv, sub_idx)
+
+        #if no traingles insersect the field of view
+        #return a transparent tile
+        if (len(sub_idx) == 0) or (len(nv_subset_idx) == 0):
+            logger.info("No triangles in field of view, returning empty tile.")
+            return blank_response();
+            
         # logger.debug(nv_subset_idx.shape)
 
-        #TODO IMPORTANT!!!! IF len(nv_subset_idx) == 0: SEND TRANSPARENT IMAGE!!!
-        
-        triag_subset = Tri.Triangulation(lat, lon, triangles=nv[nv_subset_idx])
+        #TODO IMPORTANT!!!! IF len(nv_subset_idx) == 0: SEND TRANSPARENT IMAGE!!!        
+        triang_subset = Tri.Triangulation(lat, lon, triangles=nv[nv_subset_idx])
         logger.info("getMap Computing Triangulation Subset Complete.")
 
-        
         datasetnc = netCDF4.Dataset(url,'r')
+        time = get_nearest_start_time(datasetnc)
+        
+        logger.info("time = {0}".format(time))
+        
+        if len(variables) == 1:
+            logger.info("len(variables) == 1")
+            logger.info("getMap retrieving variable {0}".format(variables))
 
-        #THIS IS THE LAYER
-        #There can be 2 variables in get request e.g. (u,v)
-        #TODO: Must expand to multiple layers
-        logger.info("getMap retrieving variables {0}".format(variables))
-        data = datasetnc.variables[variables[0]][:]
-        logger.info("getMap finished retrieving variables")
+            data_obj = datasetnc.variables[variables[0]]
+
+            #I find its faster to grab all data then to grab only
+            #subindicies from server
+            if (len(data_obj.shape) == 2) and (time != None):
+                logger.info("getMap slicing time {0}".format(time))
+                data = data_obj[time,:]
+            elif len(data_obj.shape) == 1:
+                logger.info("getMap variable has no time dimension.")
+                data = data_obj[:]
+            else:
+                logger.info("Dimension Mismatch: data_obj.shape == {0} and time = {1}".format(data_obj.shape, time))
+                return blank_response(width, height)
+            
+            logger.info("getMap finished retrieving variable {0}, serving tricontourf response".format(variables))
+            response = tricontourf_response(triang_subset, data, lonmin, latmin, lonmax, latmax, width, height)
+        elif len(variables) == 2:
+            data_objs = [datasetnc.variables[v] for v in variables]
+            
+            for do in data_obj:
+                if len(data_obj.shape) == 2 and time != None:
+                    data = data_obj[time,:]
+                elif len(data_obj.shape) == 1:
+                    data = data_obj[:]
+                else:
+                    logger.info("Dimension Mismatch: data_obj.shape == {0} and time = {1}".format(data_obj.shape, time))
+                    return blank_response(width, height)
+
+            
+        else:
+            #don't know how to handle more than 2 variables
+            logger.info("Cannot handle more than 2 variables per request.")
+            return blank_response(width, height)
+            
+        
+        # logger.info("getMap retrieving variables {0}".format(variables))
+        # data = datasetnc.variables[variables[0]][:]
+        # logger.info("getMap finished retrieving variables")
 
         #TIME NEEDS TO PARSED AND HANDLED
         
-        fig = Figure(dpi=80, facecolor='none', edgecolor='none')
-        fig.set_alpha(0)
-        projection = request.GET["projection"]
-        m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
-                    urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
-                    resolution=None,
-                    lat_ts = 0.0,
-                    suppress_ticks=True)
-        m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
 
-        #Plot to the projected figure axes
-        # logger.debug("data.shape = {0}".format(data.shape))
-        # logger.debug("nv.shape = {0}".format(nv.shape))
-        # logger.debug("lat.shape  = {0}".format(lat.shape))
-        # logger.debug("lon.shape  = {0}".format(lon.shape))
-        # print data
-
-        #NEED TO ADD CHECKS FOR EMPTY DATA OR IF LVLS ARE INVALID VARIABLES!
-        numlvls = 15
-        lvls = np.linspace(data.min(), data.max(), numlvls)
-        # lvls = np.arange(data.min(), data.max(), 0.25)
-        logger.info("lvls.shape = {0}, lvls.min() = {1}, lvls.max() = {2}".format(lvls.shape, lvls.min(), lvls.max()))
-        # print "data.min = {0}".format(data.min())
-        # print "data.max = {0}".format(data.max())
-        # print "levels = {0}".format(lvls)
-        m.ax.tricontourf(triag_subset, data, levels=lvls)
-        m.ax.set_xlim(lonmin, lonmax)
-        m.ax.set_ylim(latmin, latmax)
-        m.ax.set_frame_on(False)
-        m.ax.set_clip_on(False)
-        m.ax.set_position([0, 0, 1, 1])
-
-        canvas = FigureCanvasAgg(fig)
-        response = HttpResponse(content_type='image/png')
-        canvas.print_png(response)
         
         # topology.close()
         datasetnc.close()
