@@ -953,55 +953,62 @@ def getFeatureInfo(request, dataset):
 
     mi = pyproj.Proj("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs ")
     # Find the gfi position as lat/lon, assumes 0,0 is ul corner of map
-    lon, lat = mi(lonmin+((lonmax-lonmin)*(X/width)),
-                  latmax-((latmax-latmin)*(Y/height)),
-                  inverse=True)
+
+    # target longitude, target latitude
+    tlon, tlat = mi(lonmin+((lonmax-lonmin)*(X/width)), latmax-((latmax-latmin)*(Y/height)), inverse=True)
     lonmin, latmin = mi(lonmin, latmin, inverse=True)
     lonmax, latmax = mi(lonmax, latmax, inverse=True)
 
-    topology = netCDF4.Dataset(os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc'))
-    gridtype = topology.grid
-    if gridtype == 'False':
-        test_index = 0
-        if 'node' in styles:
-            tree = rindex.Index(dataset+'_nodes')
-            #lats = topology.variables['lat'][:]
-            #lons = topology.variables['lon'][:]
-            nindex = list(tree.nearest((lon, lat, lon, lat), 1, objects=True))
+    # want data at (tlon,tlat)
+
+    ugrid = False # flag to track if UGRID file is found
+    # ------------------------------------------------------------------------------------------------------------UGRID
+    # pyugrid to handle UGRID topology
+    try:
+
+        topology_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc')
+        logger.info("Trying to load pyugrid cache {0}".format(dataset))
+        ug = pyugrid.UGrid.from_ncfile(topology_path)
+        logger.info("Loaded pyugrid cache")
+
+        # UGRID variables
+        lat = ug.nodes[:,0]
+        lon = ug.nodes[:,1]
+        nv  = ug.faces[:]
+
+        # rindex, create if none exists yet
+        nodes_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '.nodes')
+        if os.path.exists(nodes_path):
+            tree = rindex.Index(nodes_path)
         else:
-            from shapely.geometry import Polygon, Point
-            tree = rindex.Index(dataset+'_cells')
-            #lats = topology.variables['latc'][:]
-            #lons = topology.variables['lonc'][:]
-            nindex = list(tree.nearest((lon, lat, lon, lat), 4, objects=True))
-            test_point = Point(lon, lat)
-            test = -1
-            for ii, i in enumerate(nindex):
-                lons = i.object[0]
-                lats = i.object[1]
-                test_cell = Polygon([(lons[0], lats[0]),
-                                    (lons[1],  lats[1]),
-                                    (lons[2],  lats[2]),
-                                    (lons[0],  lats[0]),
-                                    ])
-                if test_cell.contains(test_point):
-                    test_index = ii
-                    test = i.id
-            if test == -1:
-                nindex = list(tree.nearest((lon, lat, lon, lat), 1, objects=True))
-        selected_longitude, selected_latitude = tuple(nindex[test_index].bbox[:2])
-        index = nindex[test_index].id
+            def generator_nodes():
+                for i, c in enumerate(zip(lon, lat, lon, lat)):
+                    yield(i, c, None)
+            tree = index.Index(nodes_path, generator_nodes(), overwrite=True)
+
+        # find closest node or cell (only doing node for now)
+        nindex = tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True)
+        selected_longitude, selected_latitude = tuple(nindex.bbox[:2])
+        index = nindex.id
         tree.close()
-    else:
+
+        ugrid = True
+    
+    # ------------------------------------------------------------------------------------------------------------ Not pyUGRID
+    except: # default to previous workflow for non UGRID
+
+        # structured grids (where 'nodes' are the structured points)
+        topology = netCDF4.Dataset(os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc'))
         tree = rindex.Index(dataset+'_nodes')
         lats = topology.variables['lat'][:]
         lons = topology.variables['lon'][:]
-        nindex = list(tree.nearest((lon, lat, lon, lat), 1, objects=True))
-        selected_longitude, selected_latitude = lons[nindex[0].object[0], nindex[0].object[1]][0], lats[nindex[0].object[0], nindex[0].object[1]][0]
-        index = nindex[0].object
+        nindex = tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True)
+        selected_longitude, selected_latitude = lons[nindex.object[0], nindex.object[1]][0], lats[nindex.object[0], nindex.object[1]][0]
+        index = nindex.object
         tree.close()
         index = numpy.asarray(index)
 
+    # nothing UGRID related below? TODO: double check
     try:
         TIME = request.GET["time"]
         if TIME == "":
@@ -1010,11 +1017,8 @@ def getFeatureInfo(request, dataset):
     except:
         now = date.today().isoformat()
         TIME = now + "T00:00:00"
-
     TIMES = TIME.split("/")
-
     for i in range(len(TIMES)):
-
         TIMES[i] = TIMES[i].replace("Z", "")
         if len(TIMES[i]) == 16:
             TIMES[i] = TIMES[i] + ":00"
@@ -1031,12 +1035,10 @@ def getFeatureInfo(request, dataset):
         dateend = round(netCDF4.date2num(dateend, units=time_units))
         time1 = bisect.bisect_right(times, datestart) - 1
         time2 = bisect.bisect_right(times, dateend) - 1
-
         if time1 == -1:
             time1 = 0
         if time2 == -1:
             time2 = len(times)
-
         time = range(time1, time2)
         if len(time) < 1:
             time = [len(times) - 1]
@@ -1051,26 +1053,30 @@ def getFeatureInfo(request, dataset):
         else:
             time = [time1-1]
 
-    def getvar(nc, t, layer, var, ind):
-        #nc = netCDF4.Dataset(url, 'r')
-        if var == "time":
-            #print var, t
-            return nc.variables[var][t]
+    def getvar(nc, t, z, v, i):
+        '''
+        nc: netCDF4.Dataset object
+        t: time indexes
+        z: vertical index (eg. elevation) TODO: rename to z
+        v: variable name (within netCDF4.Dataset.variables
+        i: index of closest point
+        '''
+        if v == "time":
+            return nc.variables[v][t]
         else:
-            # Expects 3d cell variables.
-            if len(nc.variables[var].shape) == 3:
-                return nc.variables[var][t, layer, ind]
-            elif len(nc.variables[var].shape) == 2:
-                return nc.variables[var][t, ind]
-            elif len(nc.variables[var].shape) == 1:
-                return nc.variables[var][ind]
+            if len(nc.variables[v].shape) == 3: # time, vertical, horizontal
+                return nc.variables[v][t,z,i]
+            elif len(nc.variables[v].shape) == 2: # time, horizontal
+                return nc.variables[v][t,i]
+            elif len(nc.variables[v].shape) == 1: # horizontal
+                return nc.variables[v][i]
 
     url = Dataset.objects.get(name=dataset).path()
     datasetnc = netCDF4.Dataset(url)
 
     varis = deque()
-    varis.append(getvar(topology, time, elevation, "time", index))
-    if gridtype == 'False':
+    varis.append(getvar(topology, time, elevation, "time", index)) # time not in topology?
+    if ugrid == True:
         for var in QUERY_LAYERS:
             varis.append(getvar(datasetnc, time, elevation, var, index))
             try:
@@ -1078,14 +1084,8 @@ def getFeatureInfo(request, dataset):
             except:
                 units = ""
     else:
-        """
-        var1, var2 = cgrid.getvar(datasetnc, time, elevation, QUERY_LAYERS, index)
-        varis.append(var1)
-        if var2 is not None:
-            varis.append(var2)
-        """
         for var in QUERY_LAYERS:
-            varis.append(cgrid.getvar(datasetnc, time, elevation, [var], index)[0])
+            varis.append(cgrid.getvar(datasetnc, time, elevation, [var], index)[0]) # caution, this is cgrid.getvar....
         try:
             units = datasetnc.variables[QUERY_LAYERS[0]].units
         except:
@@ -1095,13 +1095,7 @@ def getFeatureInfo(request, dataset):
     X = numpy.asarray([var for var in varis])
     X = numpy.transpose(X)
 
-    """
-    if datasetnc.variables["time"].time_zone == "UTC":
-        time_zone_offset = ZERO
-    else:
-        time_zone_offset = None
-    """
-    #print request.GET["INFO_FORMAT"]
+    # return based on INFO_FORMAT
     if request.GET["INFO_FORMAT"].lower() == "image/png":
         response = HttpResponse(content_type=request.GET["INFO_FORMAT"].lower())
         from matplotlib.figure import Figure
@@ -1157,7 +1151,7 @@ def getFeatureInfo(request, dataset):
         output_dict2 = {}
         output_dict["type"] = "Feature"
         output_dict["geometry"] = { "type" : "Point", "coordinates" : [float(selected_longitude), float(selected_latitude)] }
-        varis[0] = [t.strftime("%Y-%m-%dT%H:%M:%SZ") for t in varis[0]]
+        varis[0] = [t.strftime("%Y-%m-%dT%H:%M:%SZ") for t in varis[0]] # reformats time in place
         output_dict2["time"] = {"units": "iso", "values": varis[0]}
         output_dict2["latitude"]  = { "units" : "degrees_north", "values" : float(selected_latitude) }
         output_dict2["longitude"] = { "units" : "degrees_east",  "values" : float(selected_longitude) }
