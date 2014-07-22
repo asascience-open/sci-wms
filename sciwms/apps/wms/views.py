@@ -1455,14 +1455,6 @@ def getMap(request, dataset):
             #don't know how to handle more than 2 variables
             logger.info("Cannot handle more than 2 variables per request.")
             return blank_response(width, height)
-            
-        
-        # logger.info("getMap retrieving variables {0}".format(variables))
-        # data = datasetnc.variables[variables[0]][:]
-        # logger.info("getMap finished retrieving variables")
-
-        #TIME NEEDS TO PARSED AND HANDLED
-        
 
         
         # topology.close()
