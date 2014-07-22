@@ -1395,8 +1395,12 @@ def getMap(request, dataset):
         #check that this is correct lat/lon
         lon = ug.nodes[:,0]
         lat = ug.nodes[:,1]
-        nv  = ug.faces[:]
         sub_idx = get_lat_lon_subset_idx(lon,lat,lonmin,latmin,lonmax,latmax)
+        # lat = ug.nodes[:,0]
+        # lon = ug.nodes[:,1]
+        # sub_idx = get_lat_lon_subset_idx(lat,lon,lonmin,latmin,lonmax,latmax)
+        nv  = ug.faces[:]
+
         nv_subset_idx = get_nv_subset_idx(nv, sub_idx)
 
         logger.info("Found {0} triangles in view".format(len(nv_subset_idx)))
@@ -1407,7 +1411,9 @@ def getMap(request, dataset):
             logger.info("No triangles in field of view, returning empty tile.")
             return blank_response(width, height);
 
-        triang_subset = Tri.Triangulation(lat, lon, triangles=nv[nv_subset_idx])
+        # triang_subset = Tri.Triangulation(lat, lon, triangles=nv[nv_subset_idx])
+        triang_subset = Tri.Triangulation(lon,lat,triangles=nv[nv_subset_idx])
+        
         logger.info("getMap Computing Triangulation Subset Complete.")
 
         datasetnc = netCDF4.Dataset(url,'r')
