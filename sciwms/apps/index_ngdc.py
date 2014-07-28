@@ -228,6 +228,7 @@ for i, (name, record) in enumerate(csw_catalogue.records.iteritems()):
         js[legal_name]['temporal']  = time_ext
         js[legal_name]['layers']    = layers
         js[legal_name]['storm']     = storm
+        js[legal_name]['url']       = urls[legal_name]
         
         #default layer for plotting in web-portal
         org_model = js[legal_name]['org_model']
