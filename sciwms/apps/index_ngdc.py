@@ -94,6 +94,9 @@ def get_layers(nc):
     if 'u' and 'v' in nc.variables:
         layers['u,v'] = default_vector_plot
 
+    if 'u-vel' and 'v-vel' in nc.variables:
+        layers['u-vel,v-vel'] = default_vector_plot
+
     if 'temp' in nc.variables:
         layers['temp'] = default_scalar_plot
 
