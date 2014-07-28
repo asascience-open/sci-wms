@@ -1381,12 +1381,11 @@ def getMap(request, dataset):
                         suppress_ticks=True)
             m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
             
+            #plot unit vectors
+            mags = np.sqrt(dx**2 + dy**2)
+            m.ax.quiver(lon, lat, dx/mags, dy/mags, mags)
 
-            mag = np.sqrt(np.sum(np.square(np.asarray([dx, dy])),0))
-            logger.info("mag.shape = {0}".format(mag.shape))
-            logger.info("mag.min() = {0}".format(mag.min()))
-            logger.info("mag.max() = {0}".format(mag.max()))
-            m.ax.quiver(lon,lat, dx, dy, mag)
+            logger.info("mags.shape = {0}".format(mags.shape))
             logger.info("quiver plotted.")
             m.ax.set_xlim(lonmin, lonmax)
             m.ax.set_ylim(latmin, latmax)
@@ -1397,6 +1396,41 @@ def getMap(request, dataset):
             response = HttpResponse(content_type='image/png')
             canvas.print_png(response)
             return response
+
+        def layered_quiver_response(lon, lat, triang_subset, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80, nlvls=20):
+            logger.info("In layered_quiver_response")
+            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
+            fig.set_alpha(0)
+            fig.set_figheight(height/dpi)
+            fig.set_figwidth(width/dpi)
+            projection = request.GET["projection"]
+            m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
+                        urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
+                        resolution=None,
+                        lat_ts = 0.0,
+                        suppress_ticks=True)
+            m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
+
+            mags = np.sqrt(dx**2 + dy**2)
+            lvls = np.linspace(mags.min(), mags.max(), nlvls)
+            
+            m.ax.tricontourf(triang_subset, mags, levels=lvls)
+            
+            logger.info("tricontourf done.")
+            
+            m.ax.quiver(lon,lat,dx/mags,dy/mags)
+            logger.info("quiver done.")
+            
+            m.ax.set_xlim(lonmin, lonmax)
+            m.ax.set_ylim(latmin, latmax)
+            m.ax.set_frame_on(False)
+            m.ax.set_clip_on(False)
+            m.ax.set_position([0, 0, 1, 1])
+            canvas = FigureCanvasAgg(fig)
+            response = HttpResponse(content_type='image/png')
+            canvas.print_png(response)
+            return response
+
         
         import matplotlib.tri as Tri
         topology_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc')
@@ -1453,6 +1487,7 @@ def getMap(request, dataset):
         elif len(variables) == 2:
             logger.info("len(variables) == 2")
             logger.info("getMap retrieving variables {0}".format(variables))
+            logger.info("time = {0}".format(time))
             data_objs = [datasetnc.variables[v] for v in variables]
 
             data = []
@@ -1471,6 +1506,19 @@ def getMap(request, dataset):
             response = ugrid_quiver_response(
                 lon[sub_idx], lat[sub_idx], data[0][sub_idx], data[1][sub_idx],
                 lonmin, latmin, lonmax, latmax, width, height)
+
+            # response = layered_quiver_response(
+            #     lon[sub_idx],
+            #     lat[sub_idx],
+            #     triang_subset,
+            #     data[0][sub_idx],
+            #     data[1][sub_idx],
+            #     lonmin,
+            #     latmin,
+            #     lonmax,
+            #     latmax,
+            #     width,
+            #     height)
         else:
             #don't know how to handle more than 2 variables
             logger.info("Cannot handle more than 2 variables per request.")
