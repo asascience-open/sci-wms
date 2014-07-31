@@ -63,6 +63,7 @@ from django.contrib.auth import authenticate, login, logout
 from sciwms.libs.data import cgrid, ugrid
 import sciwms.apps.wms.wms_requests as wms_reqs
 from sciwms.apps.wms.models import Dataset, Server, Group, VirtualLayer
+from sciwms.util import cf
 
 import pyugrid
 import numpy as np
@@ -1397,7 +1398,7 @@ def getMap(request, dataset):
             canvas.print_png(response)
             return response
 
-        def layered_quiver_response(lon, lat, triang_subset, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80, nlvls=20):
+        def layered_quiver_response(lon, lat, dx, dy, sub_idx, triang_subset, lonmin, latmin, lonmax, latmax, width, height, dpi=80, nlvls=20):
             logger.info("In layered_quiver_response")
             fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
             fig.set_alpha(0)
@@ -1507,18 +1508,19 @@ def getMap(request, dataset):
                 lon[sub_idx], lat[sub_idx], data[0][sub_idx], data[1][sub_idx],
                 lonmin, latmin, lonmax, latmax, width, height)
 
-            # response = layered_quiver_response(
-            #     lon[sub_idx],
-            #     lat[sub_idx],
-            #     triang_subset,
-            #     data[0][sub_idx],
-            #     data[1][sub_idx],
-            #     lonmin,
-            #     latmin,
-            #     lonmax,
-            #     latmax,
-            #     width,
-            #     height)
+            # response = \
+            #     layered_quiver_response(lon,
+            #                             lat,
+            #                             triang_subset,
+            #                             sub_idx,
+            #                             data[0],
+            #                             data[1],
+            #                             lonmin,
+            #                             latmin,
+            #                             lonmax,
+            #                             latmax,
+            #                             width,
+            #                             height)
         else:
             #don't know how to handle more than 2 variables
             logger.info("Cannot handle more than 2 variables per request.")
