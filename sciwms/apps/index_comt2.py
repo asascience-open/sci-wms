@@ -172,7 +172,7 @@ def idx_comt2():
     jsall = []
     for dataset in dbDataset.objects.all():
         if dataset.name != "json_all":
-            jsall.append({dataset.name:dataset.json})
+            jsall.append(dataset.json)
     jsDataset.json=jsall
     jsDataset.save()
 
