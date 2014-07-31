@@ -62,10 +62,10 @@ def get_spatial_extent(nc, legal_name):
     
     return [np.nanmin(lon), np.nanmin(lat), np.nanmax(lon), np.nanmax(lat)]
     
-def get_temporal_extent(nc):
+def get_temporal_extent(nc,time_var_name='time'):
     temp_ext = []
     
-    tobj = nc.variables.get('time')
+    tobj = nc.variables.get(time_var_name)
     if tobj:
         tkwargs = {}
         if hasattr(tobj, 'units'):
@@ -86,7 +86,7 @@ def get_temporal_extent(nc):
 
     return temp_ext
 
-def get_layers(nc):
+def get_layers(nc, vars=['depth','u,v']):
     layers = {}
     default_scalar_plot = "pcolor_average_jet_None_None_grid_False"
     default_vector_plot = "vectors_average_jet_None_None_grid_40"
@@ -107,9 +107,9 @@ def get_layers(nc):
         layers['zeta_max'] = default_scalar_plot
 
     #SLOSH Variables
-    if 'depth' in nc.variables:
-        #IN BOTH SLOSH AND SELFE
-        layers['depth'] = default_scalar_plot
+    # if 'depth' in nc.variables:
+    #     #IN BOTH SLOSH AND SELFE
+    #     layers['depth'] = default_scalar_plot
 
     if 'etamax' in nc.variables:
         layers['etamax'] = default_scalar_plot    
