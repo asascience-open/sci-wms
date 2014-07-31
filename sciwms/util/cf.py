@@ -1,5 +1,17 @@
 import re
 
+map = {
+   'time': 'time',
+   'longitude': 'longitude',
+   'latitude': 'latitude',
+   'ssh': 'sea_surface_height_above_geoid',
+   'u': 'eastward_sea_water_velocity',
+   'v': 'northward_sea_water_velocity',
+   'hs': 'sea_surface_wave_significant_height',
+   'uwind': 'eastward_wind',
+   'vwind': 'northward_wind',
+}
+
 def get_by_standard_name(nc, standard_name):
     for vn, v in nc.variables.iteritems():
         # sn - standard_name
