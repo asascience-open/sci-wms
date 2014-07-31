@@ -7,7 +7,7 @@ map = {
    'ssh': 'sea_surface_height_above_geoid',
    'u': 'eastward_sea_water_velocity',
    'v': 'northward_sea_water_velocity',
-   'hs', 'sea_surface_wave_significant_height',
+   'hs': 'sea_surface_wave_significant_height',
    'uwind': 'eastward_wind',
    'vwind': 'northward_wind',
 }
