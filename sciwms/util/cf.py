@@ -29,8 +29,12 @@ def nc_name_from_standard(nc, standard_name):
     return ret
             
 def get_global_attribute(nc, attr):
+    """
+    Wrapper to return None if attr DNE.
+    attr is a string
+    """
     try:
-        ret = nc.attr
+        ret = getattr(nc,attr)
     except:
         ret = None
     return ret

@@ -19,7 +19,7 @@ from django.db.models import Q
 
 from sciwms.apps.wms.models import Dataset as dbDataset
 from sciwms.libs.data.caching import update_dataset_cache
-
+from sciwms.util.cf import get_by_standard_name, nc_name_from_standard, get_global_attribute
 import json
 import numpy as np
 
@@ -90,62 +90,104 @@ def get_layers(nc, vars=['depth','u,v']):
     layers = {}
     default_scalar_plot = "pcolor_average_jet_None_None_grid_False"
     default_vector_plot = "vectors_average_jet_None_None_grid_40"
-    #MISC
-    if 'u' and 'v' in nc.variables:
-        layers['u,v'] = default_vector_plot
 
-    if 'u-vel' and 'v-vel' in nc.variables:
-        layers['u-vel,v-vel'] = default_vector_plot
+    
+    nc_id = get_global_attribute(nc,'id')
+    nc_model = get_global_attribute(nc,'model')
+    print 'nc_id = {0}'.format(nc_id)
+    
+    if 'hypoxia' in nc_id.lower():
+        print "Retrieving Hypoxia Layers"
+        logger.info("Retrieving Hypoxia layers")
+        
+        standard_names_styles =\
+            {'sea_walter_salinity':default_scalar_plot,
+             'sea_water_temperature':default_scalar_plot}
 
-    if 'temp' in nc.variables:
-        layers['temp'] = default_scalar_plot
+        nc_names_styles = {}
+        for sname, style in standard_names_styles.iteritems():
+            ncname = nc_name_from_standard(nc,sname)
+            if ncname:
+                nc_names_styles[ncname] = style
+                layers[ncname] = style
 
-    if 'zeta' in nc.variables:
-        layers['zeta'] = default_scalar_plot
+        return layers
 
-    if 'zeta_max' in nc.variables:
-        layers['zeta_max'] = default_scalar_plot
+    elif nc_model.lower() == 'fcvom':
+        
+        if 'hs' in nc.variables:
+            layers['hs'] = default_scalar_plot
 
-    #SLOSH Variables
-    # if 'depth' in nc.variables:
-    #     #IN BOTH SLOSH AND SELFE
-    #     layers['depth'] = default_scalar_plot
+        standard_names_styles =\
+          {'northward_sea_water_velocity'}
+            
+        logger.info("Retrieving FVCOM layers")
+    elif nc_model.lower() == 'selfe':
+        logger.info("Retrieving SELFE layers")
+    elif nc_model.lower() == 'adcirc':
+        logger.info("Retrieving ADCIRC layers")
+    elif nc_model.lower() == 'slosh':
+        logger.info("Retrieving SLOSH layers")
+    else:
+        logger.info("Unknown dataset type: cannot retrieve layers")
+    
+    
+    # #MISC
+    # if 'u' and 'v' in nc.variables:
+    #     layers['u,v'] = default_vector_plot
 
-    if 'etamax' in nc.variables:
-        layers['etamax'] = default_scalar_plot    
+    # if 'u-vel' and 'v-vel' in nc.variables:
+    #     layers['u-vel,v-vel'] = default_vector_plot
 
-    # if 'eta_max' in nc.variables:
-    #     layers['eta_max'] = default_scalar_plot
+    # if 'temp' in nc.variables:
+    #     layers['temp'] = default_scalar_plot
 
-    #ADCIRC Variables
-    if 'zeta_max' in nc.variables:
-        layers['zeta_max'] = default_scalar_plot
+    # if 'zeta' in nc.variables:
+    #     layers['zeta'] = default_scalar_plot
 
-    if 'radstress_max' in nc.variables:
-        layers['radstress_max'] = default_scalar_plot
+    # if 'zeta_max' in nc.variables:
+    #     layers['zeta_max'] = default_scalar_plot
 
-    if 'vel_max' in nc.variables:
-        layers['vel_max'] = default_scalar_plot
+    # #SLOSH Variables
+    # # if 'depth' in nc.variables:
+    # #     #IN BOTH SLOSH AND SELFE
+    # #     layers['depth'] = default_scalar_plot
 
-    if 'wind_max' in nc.variables:
-        layers['wind_max'] = default_scalar_plot
+    # if 'etamax' in nc.variables:
+    #     layers['etamax'] = default_scalar_plot    
 
-    if 'swan_DIR_max' in nc.variables:
-        layers['swan_DIR_max'] = default_scalar_plot
+    # # if 'eta_max' in nc.variables:
+    # #     layers['eta_max'] = default_scalar_plot
 
-    if 'swan_TPS_max' in nc.variables:
-        layers['swan_TPS_max'] = default_scalar_plot
+    # #ADCIRC Variables
+    # if 'zeta_max' in nc.variables:
+    #     layers['zeta_max'] = default_scalar_plot
 
-    #FVCOM
-    if 'maxele' in nc.variables:
-        layers['maxele'] = default_scalar_plot
+    # if 'radstress_max' in nc.variables:
+    #     layers['radstress_max'] = default_scalar_plot
 
-    if 'h' in nc.variables:
-        layers['h'] = default_scalar_plot
+    # if 'vel_max' in nc.variables:
+    #     layers['vel_max'] = default_scalar_plot
 
-    return layers
+    # if 'wind_max' in nc.variables:
+    #     layers['wind_max'] = default_scalar_plot
 
-if __name__ == "__main__":        
+    # if 'swan_DIR_max' in nc.variables:
+    #     layers['swan_DIR_max'] = default_scalar_plot
+
+    # if 'swan_TPS_max' in nc.variables:
+    #     layers['swan_TPS_max'] = default_scalar_plot
+
+    # #FVCOM
+    # if 'maxele' in nc.variables:
+    #     layers['maxele'] = default_scalar_plot
+
+    # if 'h' in nc.variables:
+    #     layers['h'] = default_scalar_plot
+
+    # return layers
+
+def main():
     reqcnt = 0
     while reqcnt < 2:
         try:
@@ -296,3 +338,6 @@ if __name__ == "__main__":
 
     dataset.json = json_all
     dataset.save()
+
+if __name__ == "__main__":
+    main()
