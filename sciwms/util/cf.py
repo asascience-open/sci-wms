@@ -1,7 +1,7 @@
 import re
 
 def get_by_standard_name(nc, standard_name):
-    for vn, v in nc.variables.items():
+    for vn, v in nc.variables.iteritems():
         # sn - standard_name
         sn = nc.variables[vn].__dict__.get('standard_name', None)
         if sn == None:
@@ -15,4 +15,9 @@ def get_by_standard_name(nc, standard_name):
             sn = '%s_%s' % (cm, sn)
         if sn == standard_name:
             return v
+    return None
+
+def get_global_attribute(nc, attr):
+    if hasattr(nc, attr):
+        return nc.attr
     return None
