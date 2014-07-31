@@ -91,7 +91,7 @@ comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc']['org_model']='UND_ADCIRCSWAN'
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc']['url'] = 'http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/UND_ADCIRCSWAN/Hurricane_Georges_2D_prelim_no_waves/Output/fort.63.nc'
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc']['layers'] = {'zeta':default_scalar_plot}
-comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc']['category']='inundation_tropical'
+comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc']['category']='pr_inundation_tropical'
 
 
 
@@ -101,7 +101,7 @@ comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['url'] = 'http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/UND_ADCIRCSWAN/Hurricane_Georges_2D_prelim_no_waves/Output/fort.74.nc'
 # comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['variables']=['windx,windy']
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['layers']={'windx,windy':default_vector_plot}
-comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['category']='inundation_tropical'
+comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['category']='pr_inundation_tropical'
 
 
 #EMC ADCIRC-WW3
@@ -111,17 +111,16 @@ comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only'][
 comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only']['url'] = 'http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/EMC_ADCIRC-WW3/Dec2013Storm_2D_preliminary_run_1_waves_only/00_dir.ncml'
 comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only']['layers'] =\
     {'u,v':default_vector_plot,'hs':default_scalar_plot,'wlv':default_scalar_plot,'U10,V10':default_vector_plot}
-comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only']['category']='inundation_tropical'
+comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only']['category']='pr_inundation_tropical'
 
 #NRL Delft3D
 comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves'] = {}
 comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['storm']='Hurricane Ike'
 comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['org_model']='NRL_Delft3D'
 comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['url'] = 'http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/NRL_Delft3D/Hurricane_Ike_2D_preliminary_run_1_without_waves/00_dir.ncml'
-# comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['variables']=['waterlevel','velocity_x,velocity_y']
 comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['layers']=\
   {'waterlevel':default_scalar_plot,'velocity_x,velocity_y':default_vector_plot}
-comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['category']='inundation_tropical'
+comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['category']='pr_inundation_tropical'
 
 def idx_comt2():
     update_topology=True
