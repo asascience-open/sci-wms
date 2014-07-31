@@ -18,6 +18,10 @@ def get_by_standard_name(nc, standard_name):
     return None
 
 def get_global_attribute(nc, attr):
-    if hasattr(nc, attr):
-        return nc.attr
-    return None
+    try:
+        ret = nc.attr
+    except:
+        ret = None
+    
+    return ret
+
