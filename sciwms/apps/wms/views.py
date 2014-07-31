@@ -946,6 +946,9 @@ def getFeatureInfo(request, dataset):
     styles = request.GET["styles"].split(",")[0].split("_")
     QUERY_LAYERS = request.GET['query_layers'].split(",")
 
+    # BM 20140731
+    # QUERY_LAYERS expects the "UI" name which is then mapped to a CF standard_name and the variable is looked up via its standard_name using the CF util
+
     try:
         elevation = int(request.GET['elevation'])
     #print elevation
@@ -961,6 +964,12 @@ def getFeatureInfo(request, dataset):
     lonmax, latmax = mi(lonmax, latmax, inverse=True)
 
     # want data at (tlon,tlat)
+
+    # outline
+    # 1) use topology to get lat/lon values: this uses pyugrid for UGRID compliant datasets
+    # 2) get index of "node" that is closest to the requested point
+    #    NOTE: node is more meaningful in UGRID, but is also created for each grid point in structured grids
+
 
     ugrid = False # flag to track if UGRID file is found
     # ------------------------------------------------------------------------------------------------------------UGRID
@@ -993,7 +1002,7 @@ def getFeatureInfo(request, dataset):
         # find closest node or cell (only doing node for now)
         nindex = list(tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True))[0]
         selected_longitude, selected_latitude = tuple(nindex.bbox[:2])
-        index = nindex.id
+        index = nindex.id # single value (node index)
         tree.close()
         # this is UGRID
         ugrid = True
@@ -1005,11 +1014,16 @@ def getFeatureInfo(request, dataset):
         tree = rindex.Index(dataset+'_nodes')
         lats = topology.variables['lat'][:]
         lons = topology.variables['lon'][:]
-        nindex = list(tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True))[0]
+        nindex = list(tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True))[0] # returns generator > cast to list and get [0] value
+        # why are lat/lon 3d? eg. why using the [0] index in next line for both lats and lons
+        logger.info('shape of lons: ', lons.shape)
+        logger.info('shape of lats: ', lats.shape)
         selected_longitude, selected_latitude = lons[nindex.object[0], nindex.object[1]][0], lats[nindex.object[0], nindex.object[1]][0]
-        index = nindex.object
+        #index = nindex.object # tuple ((row,),(col,))
+        index = (nindex.object[0][0],nindex.object[1][0]) # tuple(row,col) from that nasty ((row,),(col,)) returned object
+        logger.info(index)
         tree.close()
-        index = numpy.asarray(index)
+        index = numpy.asarray(index) # array([[row],[col]])
         topology.close()
 
     # nothing UGRID related below
@@ -1061,45 +1075,59 @@ def getFeatureInfo(request, dataset):
         else:
             time = [time1-1]
 
-    def getvar(nc, t, z, v, i):
-        '''
-        nc: netCDF4.Dataset object
-        t: time indexes
-        z: vertical index (eg. elevation) TODO: rename to z
-        v: variable name (within netCDF4.Dataset.variables
-        i: index of closest point
-        '''
-        if v == "time":
-            return nc.variables[v][t]
-        else:
-            if len(nc.variables[v].shape) == 3: # time, vertical, horizontal
-                return nc.variables[v][t,z,i]
-            elif len(nc.variables[v].shape) == 2: # time, horizontal
-                return nc.variables[v][t,i]
-            elif len(nc.variables[v].shape) == 1: # horizontal
-                return [nc.variables[v][i]]
 
-    # grabbing requested variables
+    def getvar(v, t, z, i):
+        '''
+        v: netCDF4.Variable object
+        t: time index(es) - ONLY index that can be > 1
+        z: vertical index (eg. elevation/z)
+        i: spatial index (closest point) THIS MUST BE ONE, tuple if i/j
+        '''
+        # TODO: protect against i(ndex) being more than 2, should be node(1 value) or i/j(2 tuple)
+        # non-UGRID (i,j based)
+        if isinstance(i, tuple):
+            # 3D: time/vertical/horizontal
+            if len(v.shape) == 4:
+                return v[t,z,i[0],i[1]]
+            # 2D: time/horizontal
+            elif len(v.shape) == 3:
+                return v[t,i[0],i[1]]
+            # 1D: horizontal (independent of time)
+            elif len(v.shape) == 2:
+                return [v[i[0],i[1]]] # return expects list
+        # UGRID (node based)
+        else:
+            # 3D: time/vertical/horizontal
+            if len(v.shape) == 3:
+                return v[t,z,i]
+            # 2D: time/horizontal
+            elif len(v.shape) == 2:
+                return v[t,i]
+            # 1D: horizontal (independent of time)
+            elif len(v.shape) == 1:
+                return [v[i]] # return expects list
+
+    # get values for requested QUERY_LAYERS
     varis = deque()
-    varis.append(getvar(datasetnc, time, elevation, "time", index)) # time not in topology?
-    if ugrid == True:
-        for var in QUERY_LAYERS:
-            logger.info('appending UGRID %s' % var)
-            varis.append(getvar(datasetnc, time, elevation, var, index))
-            try:
-                units = datasetnc.variables[var].units
-            except:
-                units = ""
-    else:
-        for var in QUERY_LAYERS:
-            logger.info('appending non-UGRID %s' % var)
-            varis.append(cgrid.getvar(datasetnc, time, elevation, [var], index)[0]) # caution, this is cgrid.getvar....
+    varis.append(cf.get_by_standard_name(datasetnc, 'time')[time]) # adds time as first element (in NetCDF format, converted later)
+    for var in QUERY_LAYERS:
+        # map from QUERY_LAYERS name (AKA UI name) to CF standard_name
+        v = cf.map.get(var, None)
+        if v == None:
+            logger.warning('requested QUERY_LAYER %s, no map exists to CF standard_name' % var)
+            continue
+        variable = cf.get_by_standard_name(datasetnc, v)
+        logger.info('appending variable %s with CF standard_name %s' % (var,v))
+        varis.append(getvar(variable, time, elevation, index))
         try:
-            units = datasetnc.variables[QUERY_LAYERS[0]].units
+            units = cf.get_by_standard_name(datasetnc, v).units
         except:
             units = ""
 
+    # convert time to Python datetime object
     varis[0] = netCDF4.num2date(varis[0], units=time_units)
+
+    # restructure the array
     X = numpy.asarray([var for var in varis])
     X = numpy.transpose(X)
 
