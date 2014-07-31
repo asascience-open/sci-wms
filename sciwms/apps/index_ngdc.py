@@ -144,163 +144,155 @@ def get_layers(nc):
         layers['h'] = default_scalar_plot
 
     return layers
-        
-reqcnt = 0
-while reqcnt < 2:
+
+if __name__ == "__main__":        
+    reqcnt = 0
+    while reqcnt < 2:
+        try:
+            logger.debug("Querying CSW Catalog {0} attempt {1}".format(endpoint, reqcnt+1))
+            csw_catalogue = csw.CatalogueServiceWeb(endpoint, timeout = timeout)
+            break
+        except:
+            #try one more time, timeouts sometimes occur
+            logger.debug("Couldn't parse catalog on pass {0}, trying again in 30 seconds.".format(reqcnt))
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            str_exc_descr = repr(traceback.format_exception(exc_type, exc_value, exc_traceback))
+            logger.info(str_exc_descr)
+            reqcnt += 1
+            time.sleep(30)#give the server some extra time
+
+    if reqcnt >= 2:
+        logger.info("Couldn't Contact NGDC CSW Catalogue")
+        raise ValueError("Couldn't Contact NGDC CSW Catalogue.")
+
+
+    urls = {}
+    json_all = []
+    update_topology=True
+    nupdated = 0
+    csw_catalogue.getrecords2([uuid_filter], esn='full', maxrecords=999999)
+    for i, (name, record) in enumerate(csw_catalogue.records.iteritems()):
+        print "Processing {0} of {1}".format(i+1,len(csw_catalogue.records))
+        legal_name = re.sub('[ .!,;\-/\\\\]','_', name)
+
+        for ref in record.references:
+            if 'odp' in ref.get('scheme').split(":"):
+                urls[legal_name] = ref['url']
+
+        try:
+            dataset = dbDataset.objects.get(name=legal_name)
+            logger.debug("Found db entry for {0}".format(legal_name))
+        except:
+            dataset = dbDataset.objects.create(
+                name=legal_name,
+                title=name,
+                abstract = "",
+                keep_up_to_date=True,
+                uri=urls[legal_name],
+                display_all_timesteps = True)
+            logger.debug("Creating db entry for {0}".format(legal_name))
+
+        try:
+            nc = ncDataset(urls[legal_name],'r')
+        except:
+            logger.error("Couldn't load {0} @ {1}".format(legal_name, urls[legal_name]))
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            logger.error("Disabling Error: " +
+                         repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+            nc = False
+
+        if nc:
+            spatial_ext = get_spatial_extent(nc, legal_name)
+            spatial_ext = [str(el) for el in spatial_ext]
+            time_ext = get_temporal_extent(nc)
+            layers = get_layers(nc)
+
+
+            # if len(time_ext):
+            #     tlist = ["{0}".format(time_ext[0]), "{0}".format(time_ext[1])]
+
+            logger.debug("{0}: {1}, {2}".format(legal_name, spatial_ext, time_ext))
+
+
+            storms = ['IKE', 'RITA', '2005', '2007', '2010', 'EXTRATROPICAL CYCLONES']
+            storm = ""
+            for strm in storms:
+                if strm.lower() in urls[legal_name].lower():
+                    storm = strm
+                    break
+
+            split_url = urls[legal_name].split("/")
+            js = {legal_name:{}}
+            js[legal_name]['org_model'] = split_url[-2]
+            js[legal_name]['category']  = split_url[-3]
+            js[legal_name]['spatial']   = spatial_ext
+            js[legal_name]['temporal']  = time_ext
+            js[legal_name]['layers']    = layers
+            js[legal_name]['storm']     = storm
+            js[legal_name]['url']       = urls[legal_name]
+
+            #default layer for plotting in web-portal
+            org_model = js[legal_name]['org_model']
+            default_layer = ''
+            if org_model.lower() == 'umass_fvcom':
+                default_layer = 'zeta'
+
+            elif org_model.lower() == 'usf_fcvom':
+                default_layer = 'maxele'
+
+            elif org_model.lower() == 'mdl_slosh':
+                default_layer = 'etamax'
+
+            elif org_model.lower() == 'und_adcirc':
+                default_layer = 'zeta_max'
+                if not 'zeta_max' in nc.variables:
+                    if 'zeta' in nc.variables:
+                        default_layer = 'zeta'
+
+            elif org_model.lower() == 'ums_selfe':
+                default_layer = 'elev'
+
+            elif org_model.lower() == 'dal_roms':
+                default_layer = 'temp'
+
+            elif org_model.lower() == 'tamu_roms':
+                default_layer = 'temp'
+
+            #hard-coded fringe datasets
+            elif legal_name.lower() == "shelf_hypoxia_NOAA_NGOM_2005_2011_NGOM".lower():
+                default_layer = 'temp'
+
+            elif legal_name.lower() == "estuarine_hypoxia_VIMS_CBOFS_2004_2005".lower():
+                default_layer = 'temp'
+
+            if default_layer in js[legal_name]['layers']:
+                js[legal_name]['default_layer'] = default_layer
+            else:
+                js[legal_name]['default_layer'] = ""
+
+            dataset.json = js
+
+            dataset.save()
+
+            json_all.append(js)
+
+            if update_topology:
+                logger.debug("Updating Topology {0}".format(legal_name))
+                update_dataset_cache(dataset)
+                nupdated += 1
+                logger.debug("Done Updating Topology {0}".format(legal_name))
+
     try:
-        logger.debug("Querying CSW Catalog {0} attempt {1}".format(endpoint, reqcnt+1))
-        csw_catalogue = csw.CatalogueServiceWeb(endpoint, timeout = timeout)
-        break
-    except:
-        #try one more time, timeouts sometimes occur
-        logger.debug("Couldn't parse catalog on pass {0}, trying again in 30 seconds.".format(reqcnt))
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        str_exc_descr = repr(traceback.format_exception(exc_type, exc_value, exc_traceback))
-        logger.info(str_exc_descr)
-        reqcnt += 1
-        time.sleep(30)#give the server some extra time
-
-if reqcnt >= 2:
-    logger.info("Couldn't Contact NGDC CSW Catalogue")
-    raise ValueError("Couldn't Contact NGDC CSW Catalogue.")
-
-
-urls = {}
-json_all = []
-update_topology=True
-nupdated = 0
-csw_catalogue.getrecords2([uuid_filter], esn='full', maxrecords=999999)
-for i, (name, record) in enumerate(csw_catalogue.records.iteritems()):
-    print "Processing {0} of {1}".format(i+1,len(csw_catalogue.records))
-    legal_name = re.sub('[ .!,;\-/\\\\]','_', name)
-
-    for ref in record.references:
-        if 'odp' in ref.get('scheme').split(":"):
-            urls[legal_name] = ref['url']
-
-    try:
-        dataset = dbDataset.objects.get(name=legal_name)
-        logger.debug("Found db entry for {0}".format(legal_name))
+        dataset = dbDataset.objects.get(name="json_all")
+        logger.debug("Found Existing json_all entry")
     except:
         dataset = dbDataset.objects.create(
-            name=legal_name,
-            title=name,
-            abstract = "",
-            keep_up_to_date=True,
-            uri=urls[legal_name],
-            display_all_timesteps = True)
-        logger.debug("Creating db entry for {0}".format(legal_name))
+            name="json_all",
+            title="",
+            uri="",
+            abstract="",
+            keep_up_to_date=False,
+            display_all_timesteps=False)
 
-    try:
-        nc = ncDataset(urls[legal_name],'r')
-    except:
-        logger.error("Couldn't load {0} @ {1}".format(legal_name, urls[legal_name]))
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        logger.error("Disabling Error: " +
-                     repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
-        nc = False
-
-    if nc:
-        spatial_ext = get_spatial_extent(nc, legal_name)
-        spatial_ext = [str(el) for el in spatial_ext]
-        time_ext = get_temporal_extent(nc)
-        layers = get_layers(nc)
-        
-
-        # if len(time_ext):
-        #     tlist = ["{0}".format(time_ext[0]), "{0}".format(time_ext[1])]
-
-        logger.debug("{0}: {1}, {2}".format(legal_name, spatial_ext, time_ext))
-
-
-        storms = ['IKE', 'RITA', '2005', '2007', '2010', 'EXTRATROPICAL CYCLONES']
-        storm = ""
-        for strm in storms:
-            if strm.lower() in urls[legal_name].lower():
-                storm = strm
-                break
-                
-        split_url = urls[legal_name].split("/")
-        js = {legal_name:{}}
-        js[legal_name]['org_model'] = split_url[-2]
-        js[legal_name]['category']  = split_url[-3]
-        js[legal_name]['spatial']   = spatial_ext
-        js[legal_name]['temporal']  = time_ext
-        js[legal_name]['layers']    = layers
-        js[legal_name]['storm']     = storm
-        js[legal_name]['url']       = urls[legal_name]
-        
-        #default layer for plotting in web-portal
-        org_model = js[legal_name]['org_model']
-        default_layer = ''
-        if org_model.lower() == 'umass_fvcom':
-            default_layer = 'zeta'
-            
-        elif org_model.lower() == 'usf_fcvom':
-            default_layer = 'maxele'
-
-        elif org_model.lower() == 'mdl_slosh':
-            default_layer = 'etamax'
-
-        elif org_model.lower() == 'und_adcirc':
-            default_layer = 'zeta_max'
-            if not 'zeta_max' in nc.variables:
-                if 'zeta' in nc.variables:
-                    default_layer = 'zeta'
-                    
-        elif org_model.lower() == 'ums_selfe':
-            default_layer = 'elev'
-
-        elif org_model.lower() == 'dal_roms':
-            default_layer = 'temp'
-
-        elif org_model.lower() == 'tamu_roms':
-            default_layer = 'temp'
-
-        #hard-coded fringe datasets
-        elif legal_name.lower() == "shelf_hypoxia_NOAA_NGOM_2005_2011_NGOM".lower():
-            default_layer = 'temp'
-
-        elif legal_name.lower() == "estuarine_hypoxia_VIMS_CBOFS_2004_2005".lower():
-            default_layer = 'temp'
-
-        if default_layer in js[legal_name]['layers']:
-            js[legal_name]['default_layer'] = default_layer
-        else:
-            js[legal_name]['default_layer'] = ""
-
-        dataset.json = js
-
-        dataset.save()
-
-        json_all.append(js)
-
-        if update_topology:
-            logger.debug("Updating Topology {0}".format(legal_name))
-            update_dataset_cache(dataset)
-            nupdated += 1
-            logger.debug("Done Updating Topology {0}".format(legal_name))
-
-try:
-    dataset = dbDataset.objects.get(name="json_all")
-    logger.debug("Found Existing json_all entry")
-except:
-    dataset = dbDataset.objects.create(
-        name="json_all",
-        title="",
-        uri="",
-        abstract="",
-        keep_up_to_date=False,
-        display_all_timesteps=False)
-
-dataset.json = json_all
-dataset.save()
-
-
-    
-        
-    
-
-
-
-
+    dataset.json = json_all
+    dataset.save()
