@@ -127,18 +127,10 @@ def idx_comt2():
     update_topology=True
     pr_inundation = comt2['pr_inundation_tropical']
 
-    try:
-        jsDataset = dbDataset.objects.get(name="json_all")
-    except:
-        jsDataset = dbDataset.objects.create(name="json_all",abstract="",title="",keep_up_to_date=False,display_all_timesteps=False,json={})
-    
-    js = jsDataset.json
-    
     for name in pr_inundation.keys():
         logger.info("Indexing {0}".format(name))
-        js[name] = {}
+        js = {name:{}}
 
-        
         nc = ncDataset(pr_inundation[name]['url'],'r')
 
         fbb = get_spatial_extent(nc)
@@ -159,7 +151,7 @@ def idx_comt2():
             logger.info("Created new db entry for {0}".format(name))
 
         dataset.uri = pr_inundation[name]['url']
-        dataset.json = js[name]
+        dataset.json = js
             
         dataset.save()
         if update_topology:
@@ -168,7 +160,21 @@ def idx_comt2():
             logger.debug("Done Updating Topology {0}".format(dataset.name))
 
 
-    jsDataset.json = js
+    try:
+        jsDataset = dbDataset.objects.get(name='json_all')
+    except:
+        jsDataset = dbDataset.objects.create(name='json_all',
+                                             abstract='',
+                                             title=name,
+                                             keep_up_to_date=False,
+                                             display_all_timesteps=False,
+                                             json=[])
+
+    jsall = []
+    for dataset in dbDataset.objects.all():
+        if dataset.name != "json_all":
+            jsall.append({dataset.name:dataset.json})
+    jsDataset.json=jsall
     jsDataset.save()
 
 if __name__ == "__main__":
