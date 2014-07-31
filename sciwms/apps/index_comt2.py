@@ -19,6 +19,7 @@ from django.db.models import Q
 
 from sciwms.apps.wms.models import Dataset as dbDataset
 from sciwms.libs.data.caching import update_dataset_cache
+from sciwms.util.cf import get_by_standard_name
 
 import json
 import numpy as np
@@ -31,7 +32,57 @@ formatter = logging.Formatter(fmt='[%(asctime)s] - <<%(levelname)s>> - |%(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-from index_ngdc import get_temporal_extent, get_spatial_extent
+# from index_ngdc import get_temporal_extent, get_spatial_extent
+
+default_scalar_plot = "pcolor_average_jet_None_None_grid_False"
+default_vector_plot = "vectors_average_jet_None_None_grid_40"
+
+def get_spatial_extent(nc):
+    bb = []
+    try:
+        lat = get_by_standard_name(nc, 'latitude')
+        if not lat:
+            raise Exception("lat is None")
+        lon = get_by_standard_name(nc, 'longitude')
+        if not lon:
+            raise Exception("lon is None")
+        lat = lat[:]
+        lon = lon[:]
+        bb = [np.nanmin(lon), np.nanmin(lat), np.nanmax(lon), np.nanmax(lat)]
+    except:
+        logger.info("Couldn't compute spatial extent")
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        logger.error("Disabling Error: " +
+                     repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+    finally:
+        return bb
+
+def get_temporal_extent(nc):
+    tobj = get_by_standard_name(nc, 'time')
+    if not time:
+        return []
+
+    tkwargs = {}
+    if hasattr(tobj, 'units'):
+        tkwargs['units'] = tobj.units
+    if hasattr(tobj, 'calendar'):
+        tkwargs['calendar'] = tobj.calendar.lower()
+
+    times = tobj[:]
+    dates = []
+    for t in times:
+        try:
+            dates.append(num2date(t, **tkwargs))
+        except:
+            pass
+        
+    temp_ext = []
+    if len(dates):
+        temp_ext = [dates[0], dates[-1]]
+
+    return temp_ext
+
+
 comt2 = {}
 comt2['pr_inundation_tropical'] = {}
 #UND ADCIRCSWAN
@@ -39,49 +90,86 @@ comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc']['storm']='Hurricane Georges'
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc']['org_model']='UND_ADCIRCSWAN'
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc']['url'] = 'http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/UND_ADCIRCSWAN/Hurricane_Georges_2D_prelim_no_waves/Output/fort.63.nc'
-comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc']['variables'] = ['zeta']
+comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc']['layers'] = {'zeta':default_scalar_plot}
+comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_63_nc']['category']='inundation'
+
+
 
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']={}
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['storm']='Hurricane Georges'
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['org_model']='UND_ADCIRCSWAN'
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['url'] = 'http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/UND_ADCIRCSWAN/Hurricane_Georges_2D_prelim_no_waves/Output/fort.74.nc'
-comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['variables']=['windx,windy']
+# comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['variables']=['windx,windy']
+comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['layers']={'windx,windy':default_vector_plot}
+comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['category']='inundation'
+
 
 #EMC ADCIRC-WW3
 comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only'] = {}
 comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only']['storm'] = 'Dec 2013 Storm'
 comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only']['org_model']='EMC_ADCIRC_WW3'
 comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only']['url'] = 'http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/EMC_ADCIRC-WW3/Dec2013Storm_2D_preliminary_run_1_waves_only/00_dir.ncml'
-comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only']['variables']=['u,v','hs','wlv','U10,V10']
+comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only']['layers'] =\
+    {'u,v':default_vector_plot,'hs':default_scalar_plot,'wlv':default_scalar_plot,'U10,V10':default_vector_plot}
+comt2['pr_inundation_tropical']['Dec2013Storm_2D_preliminary_run_1_waves_only']['category']='inundation'
 
 #NRL Delft3D
 comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves'] = {}
 comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['storm']='Hurricane Ike'
 comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['org_model']='NRL_Delft3D'
 comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['url'] = 'http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/NRL_Delft3D/Hurricane_Ike_2D_preliminary_run_1_without_waves/00_dir.ncml'
-comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['variables']=['waterlevel','velocity_x,velocity_y']
+# comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['variables']=['waterlevel','velocity_x,velocity_y']
+comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['layers']=\
+  {'waterlevel':default_scalar_plot,'velocity_x,velocity_y':default_vector_plot}
+comt2['pr_inundation_tropical']['Hurricane_Ike_2D_preliminary_run_1_without_waves']['category']='inundation'
 
+def idx_comt2():
+    update_topology=True
+    pr_inundation = comt2['pr_inundation_tropical']
+
+    try:
+        jsDataset = dbDataset.objects.get(name="json_all")
+    except:
+        jsDataset = dbDataset.objects.create(name="json_all",abstract="",title="",keep_up_to_date=False,display_all_timesteps=False,json={})
+    
+    js = jsDataset.json
+    
+    for name in pr_inundation.keys():
+        logger.info("Indexing {0}".format(name))
+        js[name] = {}
+
+        
+        nc = ncDataset(pr_inundation[name]['url'],'r')
+
+        fbb = get_spatial_extent(nc)
+        sbb = [str(el) for el in fbb]
+        js[name]['org_model'] = pr_inundation[name]['org_model']
+        js[name]['category']  = pr_inundation[name]['category']
+        js[name]['spatial']   = sbb
+        js[name]['temporal']  = get_temporal_extent(nc)
+        js[name]['layers']    = pr_inundation[name]['layers']
+        js[name]['storm']     = pr_inundation[name]['storm']
+        js[name]['url']       = pr_inundation[name]['url']
+
+        try:
+            dataset = dbDataset.objects.get(name=name)
+            logger.info("Found db entry for {0}".format(name))
+        except:
+            dataset = dbDataset(name=name,abstract='',title=name,keep_up_to_date=True,display_all_timesteps=True)
+            logger.info("Created new db entry for {0}".format(name))
+
+        dataset.uri = pr_inundation[name]['url']
+        dataset.json = js[name]
+            
+        dataset.save()
+        if update_topology:
+            logger.debug("Updating Topology {0}".format(dataset.name))
+            update_dataset_cache(dataset)
+            logger.debug("Done Updating Topology {0}".format(dataset.name))
+
+
+    jsDataset.json = js
+    jsDataset.save()
 
 if __name__ == "__main__":
-    for name in comt2['pr_inundation_tropical'].keys():
-        print name
-        for k in comt2['pr_inundation_tropical'][name].keys():
-            print "\t{0}:{1}".format(k,comt2['pr_inundation_tropical'][name][k])
-        # print comt2['pr_inundation_tropical'][name]['url']
-        # print comt2['pr_inundation_tropical'][name]['variables']
-
-        # json = {name:}
-    
-
-
-        # json = {}
-        # dataset, created_bool =\
-        #     dbDataset.objects,get_or_create(name='Hurricane_Ike_2D_preliminary_run_1_without_waves_for_63_nc',
-        #                                     abstract='',
-        #                                     title='Hurricane_Ike_2D_preliminary_run_1_without_waves_for_63_nc',
-        #                                     url='http://comt.sura.org/thredds/dodsC/comt_2_full/'
-        #                                     'pr_inundation_tropical/UND_ADCIRCSWAN/'
-        #                                     'Hurricane_Georges_2D_prelim_no_waves/Output/fort.63.nc',
-        #                                     keep_up_to_date=True,
-        #                                     display_all_timesteps=True)
-
+    idx_comt2()
