@@ -1388,7 +1388,7 @@ def getMap(request, dataset):
                 if time == len(times):
                     time -= 1
                 elif time != 0:
-                    time = time if abs(times[time]-datstart) < abs(time[time-1]-datestart) else time-1
+                    time = time if abs(times[time]-datestart) < abs(time[time-1]-datestart) else time-1
             except:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 logger.info("Dataset doesn't contain temporal dimension: "
@@ -1521,6 +1521,9 @@ def getMap(request, dataset):
         
         logger.info("time = {0}".format(time))
         
+        # some short names for indexes
+        t = time
+        z = layer[0]
 
         # BM: updating here, where we're working with the data, no longer using the varname, but the UI name and need to get by standard_name
         # here's what's happening:
@@ -1578,6 +1581,9 @@ def getMap(request, dataset):
                 return blank_response(width, height) # was continue
             variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), v)
 
+            if None in variable:
+                logger.warning('variable not found for at least these'.format(variables))
+                return blank_response(width, height) # was continue
 
             logger.info("getMap retrieving variables {0}".format(variables))
             logger.info("time = {0}".format(time))
@@ -1589,11 +1595,15 @@ def getMap(request, dataset):
             data = []
             for do in data_objs:
                 logger.info("do.shape = {0}".format(do.shape))
+                logger.info("len(do.shape) = {0}".format(len(do.shape)))
+                logger.info("t = {0}".format(t))
+                logger.info("z = {0}".format(z))
+                print type(do)
                 if len(do.shape) == 3: # time, elevation, node
-                    logger.info('time,layer,{0},{1},{2}'.format(time,layer[0],do[time,layer[0],:].shape))
-                    data.append(do[time,layer[0],:]) # TODO: does layer need to be a variable? would we ever handle a list of elevations?
+                    #logger.info('t,z,{0},{1},{2}'.format(t,z,do[t,z,:].shape))
+                    data.append(do[t,z,:]) # TODO: does layer need to be a variable? would we ever handle a list of elevations?
                 elif len(do.shape) == 2: # time, node (no elevation)
-                    data.append(do[time,:])
+                    data.append(do[t,:])
                 elif len(do.shape) == 1:
                     data.append(do[:]) # node (no time or elevation)
                 else:
