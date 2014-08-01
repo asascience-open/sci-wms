@@ -1109,16 +1109,16 @@ def getFeatureInfo(request, dataset):
 
     # get values for requested QUERY_LAYERS
     varis = deque()
-    varis.append(cf.get_by_standard_name(datasetnc, 'time')[time]) # adds time as first element (in NetCDF format, converted later)
+    varis.append(cf.get_by_standard_name(datasetnc, 'time')[time]) # adds time as first element (in NetCDF format, converted later) [time] should be [tindex] or something obviously an index
     for var in QUERY_LAYERS:
         # map from QUERY_LAYERS name (AKA UI name) to CF standard_name
         v = cf.map.get(var, None)
         if v == None:
             logger.warning('requested QUERY_LAYER %s, no map exists to CF standard_name' % var)
             continue
-        variable = cf.get_by_standard_name(datasetnc, v)
+        variable = cf.get_by_standard_name(datasetnc, v['standard_name'])
         try:
-            units = cf.get_by_standard_name(datasetnc, v).units
+            units = variable.units
         except:
             units = ""
         values = getvar(variable, time, elevation, index)
@@ -1268,6 +1268,32 @@ def getMap(request, dataset):
     #handler.setFormatter(formatter)
     #logger.addHandler(handler)
 
+# ----------------------------------------------
+# some shared methods used many places in getMap
+    def blank_response(width, height, dpi=5):
+        """
+        return a transparent (blank) response
+        used for tiles with no intersection with the current view or for some other error.
+        """
+        fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
+        fig.set_alpha(0)
+        ax = fig.add_axes([0, 0, 1, 1])
+        #I don't know why height and width is divided by dpi,
+        #this is left over from old sciwms code
+        #maybe response needs to be in units of inches?
+        fig.set_figheight(height/dpi)
+        fig.set_figwidth(width/dpi)
+        ax.set_frame_on(False)
+        ax.set_clip_on(False)
+        ax.set_position([0, 0, 1, 1])
+        canvas = FigureCanvasAgg(fig)
+        response = HttpResponse(content_type='image/png')
+        canvas.print_png(response)
+        return response
+
+# ----------------------------------------------
+
+
     #totaltimer = timeobj.time()
     #loglist = []
 
@@ -1285,12 +1311,19 @@ def getMap(request, dataset):
     # Get time extents, elevation index(layer), and styles(actions)
     datestart = request.GET["datestart"]
     dateend = request.GET["dateend"]
+
+    # BM: buyer beware, this is actually WMS 'ELEVATION', AKA z coordinate, NOT WMS 'LAYERS'
+    # TODO: find closest vertical index, for now, just zero
+    layer = [0]
+    '''
     layer = request.GET["layer"]
     layer = layer.split(",")
     for i, l in enumerate(layer):
     #    layer[i] = int(l)-1
         layer = int(l)
     layer = numpy.asarray(layer)
+    '''
+
     actions = request.GET["actions"]
     actions = set(actions.split(","))
 
@@ -1305,7 +1338,7 @@ def getMap(request, dataset):
     # interest, and the variables of interest (comma sep, no spaces, limit 2)
     magnitude = request.GET["magnitude"]
     topology_type = request.GET["topologytype"]
-    variables = request.GET["variables"].split(",")
+    variables = request.GET["variables"].split(",") # NOTE: this 'variables' is actually WMS LAYERS, see wms_handler
     continuous = False
 
     # Get the box coordinates from webmercator to proper lat/lon for grid subsetting
@@ -1364,28 +1397,6 @@ def getMap(request, dataset):
                 del times
             
             return time
-
-        def blank_response(width, height, dpi=5):
-            """
-            Return a transparent (blank) response. Used for tiles with no intersection
-            with the current view or for some other error.
-            """
-            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-            fig.set_alpha(0)
-            ax = fig.add_axes([0, 0, 1, 1])
-            #I don't know why height and width is divided by dpi,
-            #this is left over from old sciwms code
-            #maybe response needs to be in units of inches?
-            fig.set_figheight(height/dpi)
-            fig.set_figwidth(width/dpi)
-            ax.set_frame_on(False)
-            ax.set_clip_on(False)
-            ax.set_position([0, 0, 1, 1])
-            canvas = FigureCanvasAgg(fig)
-            response = HttpResponse(content_type='image/png')
-            canvas.print_png(response)
-
-            return response
 
         def tricontourf_response(triang_subset, data, lonmin, latmin, lonmax, latmax, width, height, dpi=80, nlvls = 15):
             fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
@@ -1476,7 +1487,9 @@ def getMap(request, dataset):
             return response
 
         
+        # actual try block starts here (def methods only above)
         import matplotlib.tri as Tri
+
         topology_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc')
         logger.info("Trying to load pyugrid cache {0}".format(dataset))
         ug = pyugrid.UGrid.from_ncfile(topology_path)
@@ -1508,11 +1521,35 @@ def getMap(request, dataset):
         
         logger.info("time = {0}".format(time))
         
-        if len(variables) == 1:
-            logger.info("len(variables) == 1")
-            logger.info("getMap retrieving variable {0}".format(variables))
 
-            data_obj = datasetnc.variables[variables[0]]
+        # BM: updating here, where we're working with the data, no longer using the varname, but the UI name and need to get by standard_name
+        # here's what's happening:
+        #     - above we have established the indexes of interest (time,spatial,vertical) for the rendered tile
+        #     - we need use these to get the subset of data via DAP to actually plot
+        #
+        #     being updated 20140801 is the variable name passed via WMS 'LAYERS' then changed to 'variables' (eg. ssh or u,v)
+        #         need to be converted to the CF standard_name, then the netCDF4.Variable object needs to be obtained using that standard_name
+        #         once we (if we) have that Variable, we can subset the data appropriately and plot
+        #
+        # TODO: drop this 'variables' nonsense, keep the request.GET[] content in WMS terms, this is a WMS service
+
+        # scalar
+        if len(variables) == 1:
+
+            logger.info("len(variables) == 1")
+
+            var = variables[0] # because it comes in as list, just using var for consistency with getFeatureInfo
+            # get Variable using CF standard_name attribute
+            v = cf.map.get(var, None)
+            if v == None:
+                logger.warning('requested LAYERS %s, no map exists to CF standard_name' % var)
+                return blank_response(width, height) # was continue
+            variable = cf.get_by_standard_name(datasetnc, v['standard_name'])
+
+            logger.info('getMap retrieving LAYER %s with standard_name %s' % (var, v['standard_name']))
+
+            #data_obj = datasetnc.variables[variables[0]]
+            data_obj = variable
 
             #I find its faster to grab all data then to grab only
             #subindicies from server
@@ -1526,21 +1563,39 @@ def getMap(request, dataset):
                 logger.info("Dimension Mismatch: data_obj.shape == {0} and time = {1}".format(data_obj.shape, time))
                 return blank_response(width, height)
             
-            logger.info("getMap finished retrieving variable {0}, serving tricontourf response".format(variables))
+            logger.info("getMap finished retrieving variable {0}, serving tricontourf response".format(variables)) # TODO this logger statement (variables is list?)
             response = tricontourf_response(triang_subset, data, lonmin, latmin, lonmax, latmax, width, height)
+
+        # vector
         elif len(variables) == 2:
+
             logger.info("len(variables) == 2")
+
+            # get Variable using CF standard_name attribute (LIST)
+            v = [cf.map.get(var, None) for var in variables]
+            if None in v:
+                logger.warning('requested LAYERS {0}, no map exists to CF standard_name for at least one of these'.format(variables))
+                return blank_response(width, height) # was continue
+            variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), v)
+
+
             logger.info("getMap retrieving variables {0}".format(variables))
             logger.info("time = {0}".format(time))
-            data_objs = [datasetnc.variables[v] for v in variables]
 
+            #data_objs = [datasetnc.variables[v] for v in variables]
+            data_objs = variable
+
+            # data needs to be [var1,var2] where var are 1D (nodes only, elevation and time already handled)
             data = []
             for do in data_objs:
-                if len(data_objs) == 2 and time != None:
-                    logger.info("do.shape = {0}".format(do.shape))
+                logger.info("do.shape = {0}".format(do.shape))
+                if len(do.shape) == 3: # time, elevation, node
+                    logger.info('time,layer,{0},{1},{2}'.format(time,layer[0],do[time,layer[0],:].shape))
+                    data.append(do[time,layer[0],:]) # TODO: does layer need to be a variable? would we ever handle a list of elevations?
+                elif len(do.shape) == 2: # time, node (no elevation)
                     data.append(do[time,:])
-                elif len(data_objs.shape) == 1:
-                    data.append(do[:])
+                elif len(do.shape) == 1:
+                    data.append(do[:]) # node (no time or elevation)
                 else:
                     logger.info("Dimension Mismatch: data_obj.shape == {0} and time = {1}".format(data_obj.shape, time))
                     return blank_response(width, height)
@@ -1569,250 +1624,307 @@ def getMap(request, dataset):
             logger.info("Cannot handle more than 2 variables per request.")
             return blank_response(width, height)
 
-        
         # topology.close()
         datasetnc.close()
         
     except:
+
+        # log reason we dropped to this OLD code section, indicates some exception from pyugrid, lets just record why
         logger.debug("IN EXCEPT!!!")
         exc_type, exc_value, exc_traceback = sys.exc_info()
         logger.info("Something went wrong with pyugrid plot: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
-        if "kml" in actions:  # TODO: REMOVE THIS!
-            pass
+
+#---------
+        # lets get some support functions (probably copied verbatim from above and can be reduced to one) to index the target data
+        def get_lat_lon_subset_idx(lon,lat,lonmin,latmin,lonmax,latmax,padding=0.18):
+            """
+            A function to return the indicies of lat, lon within a bounding box.
+            """
+            return np.asarray(np.where(
+                (lat <= (latmax + padding)) & (lat >= (latmin - padding)) &
+                (lon <= (lonmax + padding)) & (lon >= (lonmin - padding)),)).squeeze()
+
+        def contourf_response(lon_subset, lat_subset, data, lonmin, latmin, lonmax, latmax, width, height, dpi=80, nlvls = 15):
+            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
+            fig.set_alpha(0)
+            fig.set_figheight(height/dpi)
+            fig.set_figwidth(width/dpi)
+            projection = request.GET["projection"]
+            m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
+                        urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
+                        resolution=None,
+                        lat_ts = 0.0,
+                        suppress_ticks=True)
+            m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
+            lvls = np.linspace(data.min(), data.max(), nlvls)
+            logger.info("lvls.shape = {0}, lvls.min() = {1}, lvls.max() = {2}".format(lvls.shape, lvls.min(), lvls.max()))
+            m.ax.contourf(lon_subset, lat_subset, data, levels=lvls)
+            m.ax.set_xlim(lonmin, lonmax)
+            m.ax.set_ylim(latmin, latmax)
+            m.ax.set_frame_on(False)
+            m.ax.set_clip_on(False)
+            m.ax.set_position([0, 0, 1, 1])
+            canvas = FigureCanvasAgg(fig)
+            response = HttpResponse(content_type='image/png')
+            canvas.print_png(response)
+            return response
+
+        def quiver_response(lon, lat, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80):
+            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
+            fig.set_alpha(0)
+            fig.set_figheight(height/dpi)
+            fig.set_figwidth(width/dpi)
+            projection = request.GET["projection"]
+            m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
+                        urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
+                        resolution=None,
+                        lat_ts = 0.0,
+                        suppress_ticks=True)
+            m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
+
+            #plot unit vectors
+            mags = np.sqrt(dx**2 + dy**2)
+            m.ax.quiver(lon, lat, dx/mags, dy/mags, mags)
+
+            logger.info("mags.shape = {0}".format(mags.shape))
+            logger.info("quiver plotted.")
+            m.ax.set_xlim(lonmin, lonmax)
+            m.ax.set_ylim(latmin, latmax)
+            m.ax.set_frame_on(False)
+            m.ax.set_clip_on(False)
+            m.ax.set_position([0, 0, 1, 1])
+            canvas = FigureCanvasAgg(fig)
+            response = HttpResponse(content_type='image/png')
+            canvas.print_png(response)
+            return response
+
+        def getvar(v, t, z, idx):
+            '''
+            v: netCDF4.Variable object
+            t: time index
+            z: vertical index
+            /////idx: spatial indexes (list of tuples (i,j))
+            idx: spatial indexes (list of list [[a],[b]])
+            '''
+            # non-UGRID (i,j based)
+            if v is None:
+                return None
+
+            # first, subset by time/vertical
+            # 3D: time/vertical/horizontal
+            if len(v.shape) == 4:
+                v = v[t,z,:,:]
+            # 2D: time/horizontal
+            elif len(v.shape) == 3:
+                v = v[t,:,:]
+
+            # v should be 2D (i,j) now, unique them so we're not duplicating data
+            i = np.unique(idx[0])
+            j = np.unique(idx[1])
+
+            return v[i][j]
+
+#----------
+
+        # Open topology cache file, and the actualy data endpoint
+        topology = netCDF4.Dataset(os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc'))
+        datasetnc = netCDF4.Dataset(url, 'r')
+        gridtype = topology.grid  # Grid type found in topology file (False is UGRID)
+        logger.info("gridtype: " + gridtype)
+
+
+        # SPATIAL SUBSET
+        # load the lon and lat arrays
+        lon = topology.variables['lon'][:]
+        lat = topology.variables['lat'][:]
+
+        # TODO: best way to subset this?
+        # get the subset (returns array of array [[i,i,...],[j,j,...]]
+        sub_idx = get_lat_lon_subset_idx(lon, lat, lonmin, latmin, lonmax, latmax)
+        # zip into a list of tuples (i,j)
+        #sub_idx = zip(*sub_idx)
+
+        #if no insersection with the field of view, return a transparent tile
+        if len(sub_idx) == 0:
+            logger.info("No intersection with in field of view, returning empty tile.")
+            return blank_response(width, height);
+
+        # TEMPORAL SUBSET
+        times = topology.variables['time'][:]
+        datestart = datetime.datetime.strptime(datestart, "%Y-%m-%dT%H:%M:%S" )  # datestr --> datetime obj
+        datestart = round(netCDF4.date2num(datestart, units=topology.variables['time'].units))  # datetime obj --> netcdf datenum
+        time = bisect.bisect_right(times, datestart) - 1
+        if settings.LOCALDATASET:
+            time = [1]
+        elif time == -1:
+            time = [0]
         else:
-            # Open topology cache file, and the actualy data endpoint
-            topology = netCDF4.Dataset(os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc'))
-            datasetnc = netCDF4.Dataset(url)
-            gridtype = topology.grid  # Grid type found in topology file
-            logger.info("gridtype: " + gridtype)
-            if gridtype != 'False':
-                toplatc, toplonc = 'lat', 'lon'
-                #toplatn, toplonn = 'lat', 'lon'
+            time = [time]
+        if dateend != datestart:
+            dateend = datetime.datetime.strptime( dateend, "%Y-%m-%dT%H:%M:%S" )  # datestr --> datetime obj
+            dateend = round(netCDF4.date2num(dateend, units=topology.variables['time'].units))  # datetime obj --> netcdf datenum
+            time.append(bisect.bisect_right(times, dateend) - 1)
+            if settings.LOCALDATASET:
+                time[1] = 1
+            elif time[1] == -1:
+                time[1] = 0
             else:
-                toplatc, toplonc = 'latc', 'lonc'
-                #toplatn, toplonn = 'lat', 'lon'
+                time[1] = time[1]
+            time = range(time[0], time[1]+1)
 
-            # If the request is not a box, then do nothing.
-            if latmax != latmin:
-                # Pull cell coords out of cache.
-                # Deal with the longitudes of a global file so that it adheres to
-                # the -180/180 convention.
-                if lonmin > lonmax:
-                    lonmax = lonmax + 360
-                    continuous = True
-                    lon = topology.variables[toplonc][:]
-                    #wher = numpy.where(lon<lonmin)
-                    if gridtype != 'False':
-                        lon[lon < 0] = lon[lon < 0] + 360
-                    else:
-                        lon[lon < lonmin] = lon[lon < lonmin] + 360
-                else:
-                    lon = topology.variables[toplonc][:]
-                lat = topology.variables[toplatc][:]
-                if gridtype != 'False':
-                    if gridtype == 'cgrid':
-                        index, lat, lon = cgrid.subset(latmin, lonmin, latmax, lonmax, lat, lon)
-                else:
-                    index, lat, lon = ugrid.subset(latmin, lonmin, latmax, lonmax, lat, lon)
 
-            if index is not None:
-                if ("facets" in actions) or \
-                   ("regrid" in actions) or \
-                   ("shape" in actions) or \
-                   ("contours" in actions) or \
-                   ("interpolate" in actions) or \
-                   ("filledcontours" in actions) or \
-                   ("pcolor" in actions) or \
-                   (topology_type.lower() == 'node'):
-                    if gridtype == 'False':  # If ugrid
-                        # If the nodes are important, get the node coords, and
-                        # topology array
-                        nv = ugrid.get_topologyarray(topology, index)
-                        latn, lonn = ugrid.get_nodes(topology)
-                        if topology_type.lower() == "node":
-                            index = range(len(latn))
-                        # Deal with global out of range datasets in the node longitudes
-                        if continuous is True:
-                            if lonmin < 0:
-                                lonn[numpy.where(lonn > 0)] = lonn[numpy.where(lonn > 0)] - 360
-                                lonn[numpy.where(lonn < lonmax-359)] = lonn[numpy.where(lonn < lonmax-359)] + 360
-                            else:
-                                lonn[numpy.where(lonn < lonmax-359)] = lonn[numpy.where(lonn < lonmax-359)] + 360
-                    else:
-                        pass  # If regular grid, do nothing
-                else:
-                    nv = None
-                    lonn, latn = None, None
+        # some short names for indexes
+        t = time[0]  # TODO: ugh this is bad
+        z = layer[0]
 
-                times = topology.variables['time'][:]
-                datestart = datetime.datetime.strptime(datestart, "%Y-%m-%dT%H:%M:%S" )  # datestr --> datetime obj
-                datestart = round(netCDF4.date2num(datestart, units=topology.variables['time'].units))  # datetime obj --> netcdf datenum
-                time = bisect.bisect_right(times, datestart) - 1
-                if settings.LOCALDATASET:
-                    time = [1]
-                elif time == -1:
-                    time = [0]
-                else:
-                    time = [time]
-                if dateend != datestart:
-                    dateend = datetime.datetime.strptime( dateend, "%Y-%m-%dT%H:%M:%S" )  # datestr --> datetime obj
-                    dateend = round(netCDF4.date2num(dateend, units=topology.variables['time'].units))  # datetime obj --> netcdf datenum
-                    time.append(bisect.bisect_right(times, dateend) - 1)
-                    if settings.LOCALDATASET:
-                        time[1] = 1
-                    elif time[1] == -1:
-                        time[1] = 0
-                    else:
-                        time[1] = time[1]
-                    time = range(time[0], time[1]+1)
-                t = time  # TODO: ugh this is bad
-                #loglist.append('time index requested ' + str(time))
+        # scalar
+        if len(variables) == 1:
 
-                # Get the data and appropriate resulting shape from the data source
-                if gridtype == 'False':
-                    var1, var2 = ugrid.getvar(datasetnc, t, layer, variables, index)
-                if gridtype == 'cgrid':
-                    index = numpy.asarray(index)
-                    var1, var2 = cgrid.getvar(datasetnc, t, layer, variables, index)
+            logger.info("[non-UGRID] len(variables) == 1")
 
-                if latmin != latmax:  # TODO: REMOVE THIS CHECK ALREADY DONE ABOVE
-                    if gridtype == 'False':  # TODO: Should take a look at this
-                        # This is averaging in time over all timesteps downloaded
-                        if "composite" in actions:
-                            pass
-                        elif "average" in actions:
-                            if len(var1.shape) > 2:
-                                var1 = var1.mean(axis=0)
-                                var1 = var1.mean(axis=0)
-                                try:
-                                    var2 = var2.mean(axis=0)
-                                    var2 = var2.mean(axis=0)
-                                except:
-                                    pass
-                            elif len(var1.shape) > 1:
-                                var1 = var1.mean(axis=0)
-                                try:
-                                    var2 = var2.mean(axis=0)
-                                except:
-                                    pass
-                        # This finding max in time over all timesteps downloaded
-                        elif "maximum" in actions:
-                            if len(var1.shape) > 2:
-                                var1 = numpy.abs(var1).max(axis=0)
-                                var1 = numpy.abs(var1).max(axis=0)
-                                try:
-                                    var2 = numpy.abs(var2).max(axis=0)
-                                    var2 = numpy.abs(var2).max(axis=0)
-                                except:
-                                    pass
-                            elif len(var1.shape) > 1:
-                                var1 = numpy.abs(var1).max(axis=0)
-                                try:
-                                    var2 = numpy.abs(var2).max(axis=0)
-                                except:
-                                    pass
+            var = variables[0] # because it comes in as list, just using var for consistency with getFeatureInfo
+            # get Variable using CF standard_name attribute
+            v = cf.map.get(var, None)
+            if v == None:
+                logger.warning('requested LAYERS %s, no map exists to CF standard_name' % var)
+                return blank_response(width, height) # was continue
+            variable = cf.get_by_standard_name(datasetnc, v['standard_name'])
 
-                    # Setup the basemap/matplotlib figure
-                    fig = Figure(dpi=80, facecolor='none', edgecolor='none')
-                    fig.set_alpha(0)
-                    projection = request.GET["projection"]
-                    m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
-                                urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
-                                resolution=None,
-                                lat_ts = 0.0,
-                                suppress_ticks=True)
-                    m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
-                    try:  # Fail gracefully if not standard_name, should do this a little better than a try
-                        if 'direction' in datasetnc.variables[variables[1]].standard_name:
-                            #assign new var1,var2 as u,v components
-                            var2 = 450 - var2
-                            var2[var2 > 360] = var2[var2 > 360] - 360
-                            origvar2 = var2
-                            var2 = numpy.sin(numpy.radians(origvar2)) * var1  # var 2 needs to come first so that
-                            var1 = numpy.cos(numpy.radians(origvar2)) * var1  # you arn't multiplying by the wrong var1 val
-                    except:
-                        pass
+            if variable is None:
+                logger.warning('requested LAYERS %s, standard_name %s does not exist in datasete' % (var,v['standard_name']))
+                return blank_response(width, height) # was continue
 
-                    # Close remote dataset and local cache
-                    topology.close()
-                    datasetnc.close()
+            logger.info('getMap retrieving LAYER %s with standard_name %s' % (var, v['standard_name']))
 
-                    if (climits[0] == "None") or (climits[1] == "None"):
-                        if magnitude.lower() == "log":
-                            CNorm = matplotlib.colors.LogNorm()
-                        else:
-                            CNorm = matplotlib.colors.Normalize()
-                    else:
-                        if magnitude.lower() == "log":
-                            CNorm = matplotlib.colors.LogNorm(vmin=climits[0],
-                                                              vmax=climits[1],
-                                                              clip=True,
-                                                             )
-                        else:
-                            CNorm = matplotlib.colors.Normalize(vmin=climits[0],
-                                                                vmax=climits[1],
-                                                                clip=True,
-                                                               )
-                    # Plot to the projected figure axes!
-                    if gridtype == 'cgrid':
-                        lon, lat = m(lon, lat)
-                        cgrid.plot(lon, lat, var1, var2, actions, m.ax, fig,
-                                   aspect = m.aspect,
-                                   height = height,
-                                   width = width,
-                                   norm = CNorm,
-                                   cmin = climits[0],
-                                   cmax = climits[1],
-                                   magnitude = magnitude,
-                                   cmap = colormap,
-                                   basemap = m,
-                                   lonmin = lonmin,
-                                   latmin = latmin,
-                                   lonmax = lonmax,
-                                   latmax = latmax,
-                                   projection = projection)
-                    elif gridtype == 'False':
-                        fig, m = ugrid.plot(lon, lat, lonn, latn, nv, var1, var2, actions, m, m.ax, fig,
-                                            aspect = m.aspect,
-                                            height = height,
-                                            width = width,
-                                            norm = CNorm,
-                                            cmin = climits[0],
-                                            cmax = climits[1],
-                                            magnitude = magnitude,
-                                            cmap = colormap,
-                                            topology_type = topology_type,
-                                            lonmin = lonmin,
-                                            latmin = latmin,
-                                            lonmax = lonmax,
-                                            latmax = latmax,
-                                            dataset = dataset,
-                                            continuous = continuous,
-                                            projection = projection)
-                    lonmax, latmax = m(lonmax, latmax)
-                    lonmin, latmin = m(lonmin, latmin)
-                    m.ax.set_xlim(lonmin, lonmax)
-                    m.ax.set_ylim(latmin, latmax)
-                    m.ax.set_frame_on(False)
-                    m.ax.set_clip_on(False)
-                    m.ax.set_position([0, 0, 1, 1])
-                    canvas = FigureCanvasAgg(fig)
-                    response = HttpResponse(content_type='image/png')
-                    canvas.print_png(response)
+            # subset lon/lat and the data (should be the same size)
+            lon_subset = getvar(cf.get_by_standard_name(datasetnc, 'longitude'), t, z, sub_idx)
+            lat_subset = getvar(cf.get_by_standard_name(datasetnc, 'latitude'), t, z, sub_idx)
+            data_subset = getvar(variable, t, z, sub_idx)
+
+            logger.info("lon_subset.shape = {0}".format(lon_subset.shape))
+            logger.info("lat_subset.shape = {0}".format(lat_subset.shape))
+            logger.info("data_subset.shape = {0}".format(data_subset.shape))
+
+            logger.info("getMap [non-UGRID] finished retrieving variable {0}, serving contourf response".format(variables)) # TODO this logger statement (variables is list?)
+            response = contourf_response(lon_subset, lat_subset, data_subset, lonmin, latmin, lonmax, latmax, width, height)
+
+        # vector
+        elif len(variables) == 2:
+
+            logger.info("[non-UGRID] len(variables) == 2")
+
+            # get Variable using CF standard_name attribute (LIST)
+            v = [cf.map.get(var, None) for var in variables]
+            if None in v:
+                logger.warning('requested LAYERS {0}, no map exists to CF standard_name for at least one of these'.format(variables))
+                return blank_response(width, height) # was continue
+
+            variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), v)
+            if None in variable:
+                logger.warning('requested LAYERS %s, standard_name %s does not exist in datasete' % (var,v['standard_name']))
+                return blank_response(width, height) # was continue
+
+            logger.info("getMap retrieving variables {0}".format(variables))
+            logger.info("time = {0}".format(time))
+
+            # subset lon/lat and the data (should be the same size)
+            lon_subset = getvar(cf.get_by_standard_name(datasetnc, 'longitude'), t, z, sub_idx)
+            lat_subset = getvar(cf.get_by_standard_name(datasetnc, 'latitude'), t, z, sub_idx)
+            u_subset = getvar(variable[0], t, z, sub_idx)
+            v_subset = getvar(variable[1], t, z, sub_idx)
+            
+            logger.info("lon_subset.shape = {0}".format(lon_subset.shape))
+            logger.info("lat_subset.shape = {0}".format(lat_subset.shape))
+            logger.info("u_subset.shape = {0}".format(u_subset.shape))
+            logger.info("v_subset.shape = {0}".format(v_subset.shape))
+
+            logger.info("getMap [non-UGRID] finished retrieving variable {0}, serving quiver response".format(variables)) # TODO this logger statement (variables is list?)
+            response = quiver_response(lon_subset, lat_subset, u_subset, v_subset, lonmin, latmin, lonmax, latmax, width, height)
+
+        # bad request, more than 2 vars (or none)
+        else:
+            #don't know how to handle more than 2 variables
+            logger.info("Cannot handle more than 2 variables per request.")
+            return blank_response(width, height)
+
+
+        '''
+        # Get the data and appropriate resulting shape from the data source
+        index = numpy.asarray(index)
+        # we need to get var using cf.map and standard_name
+        var1, var2 = cgrid.getvar(datasetnc, t, layer, variables, index)
+
+        # Setup the basemap/matplotlib figure
+        fig = Figure(dpi=80, facecolor='none', edgecolor='none')
+        fig.set_alpha(0)
+        projection = request.GET["projection"]
+        m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
+                    urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
+                    resolution=None,
+                    lat_ts = 0.0,
+                    suppress_ticks=True)
+        m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
+        try:  # Fail gracefully if not standard_name, should do this a little better than a try
+            if 'direction' in datasetnc.variables[variables[1]].standard_name:
+                #assign new var1,var2 as u,v components
+                var2 = 450 - var2
+                var2[var2 > 360] = var2[var2 > 360] - 360
+                origvar2 = var2
+                var2 = numpy.sin(numpy.radians(origvar2)) * var1  # var 2 needs to come first so that
+                var1 = numpy.cos(numpy.radians(origvar2)) * var1  # you arn't multiplying by the wrong var1 val
+        except:
+            pass
+
+        # Close remote dataset and local cache
+        topology.close()
+        datasetnc.close()
+
+        if (climits[0] == "None") or (climits[1] == "None"):
+            if magnitude.lower() == "log":
+                CNorm = matplotlib.colors.LogNorm()
             else:
-                fig = Figure(dpi=5, facecolor='none', edgecolor='none')
-                fig.set_alpha(0)
-                ax = fig.add_axes([0, 0, 1, 1])
-                fig.set_figheight(height/5.0)
-                fig.set_figwidth(width/5.0)
-                ax.set_frame_on(False)
-                ax.set_clip_on(False)
-                ax.set_position([0, 0, 1, 1])
-                canvas = FigureCanvasAgg(fig)
-                response = HttpResponse(content_type='image/png')
-                canvas.print_png(response)
+                CNorm = matplotlib.colors.Normalize()
+        else:
+            if magnitude.lower() == "log":
+                CNorm = matplotlib.colors.LogNorm(vmin=climits[0],
+                                                  vmax=climits[1],
+                                                  clip=True,
+                                                 )
+            else:
+                CNorm = matplotlib.colors.Normalize(vmin=climits[0],
+                                                    vmax=climits[1],
+                                                    clip=True,
+                                                   )
+        # Plot to the projected figure axes!
+        if gridtype == 'cgrid':
+            lon, lat = m(lon, lat)
+            cgrid.plot(lon, lat, var1, var2, actions, m.ax, fig,
+                       aspect = m.aspect,
+                       height = height,
+                       width = width,
+                       norm = CNorm,
+                       cmin = climits[0],
+                       cmax = climits[1],
+                       magnitude = magnitude,
+                       cmap = colormap,
+                       basemap = m,
+                       lonmin = lonmin,
+                       latmin = latmin,
+                       lonmax = lonmax,
+                       latmax = latmax,
+                       projection = projection)
+        lonmax, latmax = m(lonmax, latmax)
+        lonmin, latmin = m(lonmin, latmin)
+        m.ax.set_xlim(lonmin, lonmax)
+        m.ax.set_ylim(latmin, latmax)
+        m.ax.set_frame_on(False)
+        m.ax.set_clip_on(False)
+        m.ax.set_position([0, 0, 1, 1])
+        canvas = FigureCanvasAgg(fig)
+        response = HttpResponse(content_type='image/png')
+        canvas.print_png(response)
+        '''
 
     gc.collect()
-    #loglist.append('final time to complete request ' + str(timeobj.time() - totaltimer))
-    #logger.info(str(loglist))
+
     return response

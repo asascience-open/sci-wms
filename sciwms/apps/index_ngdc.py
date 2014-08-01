@@ -19,6 +19,7 @@ from django.db.models import Q
 
 from sciwms.apps.wms.models import Dataset as dbDataset
 from sciwms.libs.data.caching import update_dataset_cache
+from sciwms.util import cf
 from sciwms.util.cf import get_by_standard_name, nc_name_from_standard, get_global_attribute
 import json
 import numpy as np
@@ -87,15 +88,70 @@ def get_temporal_extent(nc,time_var_name='time'):
     return temp_ext
 
 def get_layers(nc, vars=['depth','u,v']):
-    layers = {}
-    default_scalar_plot = "pcolor_average_jet_None_None_grid_False"
-    default_vector_plot = "vectors_average_jet_None_None_grid_40"
 
+    '''
+    BM: updating 20140801 to use UI names defined in sciwms/util/cf
+        only variables with CF compliant standard_name can be added
+    '''
+
+    # return dict: key is UI displayable name (eg. shown in badges), value is default style for this layer
+    layers = {}
+
+    # disabling auto-scaling by requireing min/max values
+    default_scalar_plot = "pcolor_average_jet_%s_%s_grid_False"
+    default_vector_plot = "vectors_average_jet_%s_%s_grid_40"
     
     nc_id = get_global_attribute(nc,'id')
     nc_model = get_global_attribute(nc,'model')
     print 'nc_id = {0}'.format(nc_id)
-    
+
+    # going to loop through the variables in NetCDF object, if standard_name exists and is in util/cf map, add, else, ignore
+    for variable_name, variable in nc.variables.iteritems():
+        # standard_name
+        standard_name = nc.variables[variable_name].__dict__.get('standard_name', None)
+        if standard_name == None:
+            continue
+        # cell_methods (standard_name is not always unique in Dataset)
+        cell_methods = nc.variables[variable_name].__dict__.get('cell_methods', None)
+        # if cell_method specified, prepend cell_method to standard_name for uniqueness
+        if cell_methods != None:
+            cell_methods = re.sub(":\s+", "_", cell_methods)
+            cell_methods = re.sub("\s+", "", cell_methods)
+            standard_name = '%s_%s' % (cell_methods, standard_name)
+        # is this standard_name in the cf.map?
+        for k,v in cf.map.items():
+            # if standard_name is in map, add to layers dict with style as value
+            if v['standard_name'] == standard_name:
+                scale_min = v.get('scale_min', None)
+                scale_max = v.get('scale_max', None)
+                style = default_scalar_plot % (scale_min, scale_max)
+                logger.info('adding %s with LAYER name %s and default STYLE %s' % (standard_name, k, style))
+                print 'adding %s with LAYER name %s and default STYLE %s' % (standard_name, k, style)
+                layers[k] = style
+
+    # ---------------------------
+    # HACK SECTION
+    # ---------------------------
+    # if combine vector fields TODO: hack, whats a good way to do this?
+    if 'u' in layers and 'v' in layers:
+        layers['u,v'] = 'vectors_average_jet_0_2_grid_40' #TODO use scale_min/scale_max
+        del layers['u']
+        del layers['v']
+    if 'uwind' in layers and 'vwind' in layers:
+        layers['uwind,vwind'] = 'vectors_average_jet_0_50_grid_40' #TODO use scale_min/scale_max
+        del layers['uwind']
+        del layers['vwind']
+
+    # no time, latitude, longitude passed back TODO: hack
+    layers.pop('time', None)
+    layers.pop('latitude', None)
+    layers.pop('longitude', None)
+
+    print layers.keys()
+
+    return layers
+
+    '''
     if 'hypoxia' in nc_id.lower():
         print "Retrieving Hypoxia Layers"
         logger.info("Retrieving Hypoxia layers")
@@ -186,6 +242,7 @@ def get_layers(nc, vars=['depth','u,v']):
     #     layers['h'] = default_scalar_plot
 
     # return layers
+    '''
 
 def main():
     reqcnt = 0
