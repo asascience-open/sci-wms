@@ -1146,7 +1146,7 @@ def getFeatureInfo(request, dataset):
         except:
             units = ""
         values = getvar(variable, time, elevation, index)
-        logger.info('appending (variable,units,values) = (%s,%s,:) with CF standard_name %s' % (var,units))
+        logger.info('appending (variable,units,values) = (%s,%s,:) with CF standard_name %s' % (var,units,v['standard_name']))
         varis.append((var, units, values))
 
     # convert time to Python datetime object
