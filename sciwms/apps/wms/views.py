@@ -988,7 +988,7 @@ def getFeatureInfo(request, dataset):
 
         # rindex, create if none exists yet
         nodes_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '_nodes')
-        if os.path.exists(nodes_path):
+        if os.path.exists(nodes_path+'.dat') and os.path.exists(nodes_path+'.idx'):
             tree = rindex.Index(nodes_path)
             logger.info('UGRID node index found %s' % nodes_path)
         else:
@@ -1016,7 +1016,7 @@ def getFeatureInfo(request, dataset):
 
         # rindex, create if none exists yet
         nodes_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '_nodes')
-        if os.path.exists(nodes_path):
+        if os.path.exists(nodes_path+'.dat') and os.path.exists(nodes_path+'.idx'):
             tree = rindex.Index(nodes_path)
             logger.info('non-UGRID node index found %s' % nodes_path)
         else:
@@ -1146,7 +1146,7 @@ def getFeatureInfo(request, dataset):
         except:
             units = ""
         values = getvar(variable, time, elevation, index)
-        logger.info('appending (variable,units,values) = (%s,%s,%f) with CF standard_name %s' % (var,units,values.mean))
+        logger.info('appending (variable,units,values) = (%s,%s,:) with CF standard_name %s' % (var,units))
         varis.append((var, units, values))
 
     # convert time to Python datetime object
