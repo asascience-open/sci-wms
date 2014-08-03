@@ -1109,7 +1109,13 @@ def getFeatureInfo(request, dataset):
 
     # get values for requested QUERY_LAYERS
     varis = deque()
-    varis.append(cf.get_by_standard_name(datasetnc, 'time')[time]) # adds time as first element (in NetCDF format, converted later) [time] should be [tindex] or something obviously an index
+    # try to get 'time' by standard_name field
+    time_variable = cf.get_by_standard_name(datasetnc, 'time')
+    # if couldn't find by standard_name, try 'time'
+    if time_variable is None:
+        time_variable = datasetnc.variables['time']
+    # TODO: handle not finding time dimension
+    varis.append(time_variable[time]) # adds time as first element (in NetCDF format, converted later) [time] should be [tindex] or something obviously an index
     for var in QUERY_LAYERS:
         # map from QUERY_LAYERS name (AKA UI name) to CF standard_name
         v = cf.map.get(var, None)
