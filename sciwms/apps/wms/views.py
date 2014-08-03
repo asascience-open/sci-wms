@@ -1034,14 +1034,14 @@ def getFeatureInfo(request, dataset):
         # find closest node or cell (only doing node for now)
         nindex = list(tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True))[0] # returns generator > cast to list and get [0] value
         # why are lat/lon 3d? eg. why using the [0] index in next line for both lats and lons
-        logger.info('shape of lons: ', lons.shape)
-        logger.info('shape of lats: ', lats.shape)
+        logger.info('shape of lons: {0}'.format(lons.shape))
+        logger.info('shape of lats: {0}'.format(lats.shape))
         selected_longitude, selected_latitude = lons[nindex.object[0], nindex.object[1]][0], lats[nindex.object[0], nindex.object[1]][0]
         #index = nindex.object # tuple ((row,),(col,))
         index = (nindex.object[0][0],nindex.object[1][0]) # tuple(row,col) from that nasty ((row,),(col,)) returned object
-        logger.info(index)
+        logger.info('index: {0}'.format(index))
         tree.close()
-        index = numpy.asarray(index) # array([[row],[col]])
+        #index = numpy.asarray(index) # array([[row],[col]])
         topology.close()
 
     # nothing UGRID related below
@@ -1146,7 +1146,7 @@ def getFeatureInfo(request, dataset):
         except:
             units = ""
         values = getvar(variable, time, elevation, index)
-        logger.info('appending (variable,units,values) = (%s,%s,:) with CF standard_name %s' % (var,units,v))
+        logger.info('appending (variable,units,values) = (%s,%s,%f) with CF standard_name %s' % (var,units,values.mean))
         varis.append((var, units, values))
 
     # convert time to Python datetime object
