@@ -990,14 +990,14 @@ def getFeatureInfo(request, dataset):
         nodes_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '_nodes')
         if os.path.exists(nodes_path):
             tree = rindex.Index(nodes_path)
-            logger.info('node index found %s' % nodes_path)
+            logger.info('UGRID node index found %s' % nodes_path)
         else:
             def generator_nodes():
                 for i, c in enumerate(zip(lon, lat, lon, lat)):
                     yield(i, c, None)
-            logger.info('indexing nodes %s' % nodes_path)
+            logger.info('UGRID indexing nodes %s' % nodes_path)
             tree = rindex.Index(nodes_path, generator_nodes(), overwrite=True)
-            logger.info('nodes indexed')
+            logger.info('UGRID nodes indexed')
 
         # find closest node or cell (only doing node for now)
         nindex = list(tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True))[0]
@@ -1011,9 +1011,27 @@ def getFeatureInfo(request, dataset):
     except: # default to previous workflow for non UGRID
         # structured grids (where 'nodes' are the structured points)
         topology = netCDF4.Dataset(os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc'))
-        tree = rindex.Index(dataset+'_nodes')
         lats = topology.variables['lat'][:]
         lons = topology.variables['lon'][:]
+
+        # rindex, create if none exists yet
+        nodes_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '_nodes')
+        if os.path.exists(nodes_path):
+            tree = rindex.Index(nodes_path)
+            logger.info('non-UGRID node index found %s' % nodes_path)
+        else:
+            def generator_nodes():
+                c = -1
+                for row in range(lon.shape[0]):
+                    for col in range(lon.shape[1]):
+                        coord = (lon[row, col], lat[row, col], lon[row, col], lat[row, col],)
+                        c += 1
+                        yield(c, coord, ((row,), (col,)))
+            logger.info('non-UGRID indexing nodes %s' % nodes_path)
+            tree = rindex.Index(nodes_path, generator_nodes(), overwrite=True)
+            logger.info('non-UGRID nodes indexed')
+
+        # find closest node or cell (only doing node for now)
         nindex = list(tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True))[0] # returns generator > cast to list and get [0] value
         # why are lat/lon 3d? eg. why using the [0] index in next line for both lats and lons
         logger.info('shape of lons: ', lons.shape)
