@@ -1562,9 +1562,12 @@ def getMap(request, dataset):
 
             #I find its faster to grab all data then to grab only
             #subindicies from server
-            if (len(data_obj.shape) == 2) and (time != None):
+            if (len(data_obj.shape) == 3) and (time != None):
+                logger.info("getMap slicing time {0} and z {1}".format(time,z))
+                data = data_obj[t,z,:]
+            elif (len(data_obj.shape) == 2) and (time != None):
                 logger.info("getMap slicing time {0}".format(time))
-                data = data_obj[time,:]
+                data = data_obj[t,:]
             elif len(data_obj.shape) == 1:
                 logger.info("getMap variable has no time dimension.")
                 data = data_obj[:]
