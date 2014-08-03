@@ -1022,9 +1022,9 @@ def getFeatureInfo(request, dataset):
         else:
             def generator_nodes():
                 c = -1
-                for row in range(lon.shape[0]):
-                    for col in range(lon.shape[1]):
-                        coord = (lon[row, col], lat[row, col], lon[row, col], lat[row, col],)
+                for row in range(lons.shape[0]):
+                    for col in range(lons.shape[1]):
+                        coord = (lons[row, col], lats[row, col], lons[row, col], lats[row, col],)
                         c += 1
                         yield(c, coord, ((row,), (col,)))
             logger.info('non-UGRID indexing nodes %s' % nodes_path)
