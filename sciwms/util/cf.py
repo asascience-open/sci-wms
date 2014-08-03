@@ -12,7 +12,7 @@ map = {
    'uwind': {'standard_name':'eastward_wind', 'scale_min':'0', 'scale_max':'80'},
    'vwind': {'standard_name':'northward_wind', 'scale_min':'0', 'scale_max':'80'},
    'salinity': {'standard_name':'sea_walter_salinity', 'scale_min':'32', 'scale_max':'37'},
-   'sst': {'standard_name':'sea_water_temperature', 'scale_min':'20', 'scale_max':'30'},
+   'sst': {'standard_name':'sea_water_temperature', 'scale_min':'0', 'scale_max':'40'},
 }
 
 def get_by_standard_name(nc, standard_name):
