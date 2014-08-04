@@ -38,7 +38,8 @@ def remove_preliminary():
     for dataset in dbDataset.objects.all():
         if 'prelim' in dataset.name or 'preliminary' in dataset.name:
             logger.info("Removing {0} from db".format(dataset.name))
-            
+            dataset.delete()
+
             cache_file_list = glob.glob(os.path.join(settings.TOPOLOGY_PATH,dataset.name + '*'))
             for cache_file in cache_file_list:
                 logger.info("Removing {0} from topology cache".format(cache_file))
