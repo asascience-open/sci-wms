@@ -1617,13 +1617,13 @@ def getMap(request, dataset):
 
             # UGRID data has momentum (u,v) either on node (AKA vertices, eg. ADCIRC) or face (AKA triangle, eg. FVCOM/SELFE)
             #     check the location attribute of the UGRID variable to determine which lon/lat to use (if face, need a different set)
-            location = set([v.location for v in variable])
+            location = set([v.__dict__.get('location', None) for v in variable])
             if len(location) > 1:
                 logger.info("UGRID vector component variables require same 'location' attribute")
                 return blank_response(width, height)
             
             # hacky to do here, but in rush and it doesn't appear that replacing these within this scope will cause any problems
-            if location[0] == 'face':
+            if list(location)[0] == 'face':
                 lat = np.mean(lat[nv.flatten()].reshape(nv.shape),1)
                 lon = np.mean(lon[nv.flatten()].reshape(nv.shape),1)
                 sub_idx = get_lat_lon_subset_idx(lon,lat,lonmin,latmin,lonmax,latmax)
@@ -1639,7 +1639,6 @@ def getMap(request, dataset):
                 logger.info("len(do.shape) = {0}".format(len(do.shape)))
                 logger.info("t = {0}".format(t))
                 logger.info("z = {0}".format(z))
-                print type(do)
                 if len(do.shape) == 3: # time, elevation, node
                     #logger.info('t,z,{0},{1},{2}'.format(t,z,do[t,z,:].shape))
                     data.append(do[t,z,:]) # TODO: does layer need to be a variable? would we ever handle a list of elevations?
