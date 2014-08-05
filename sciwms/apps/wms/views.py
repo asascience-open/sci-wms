@@ -1520,7 +1520,7 @@ def getMap(request, dataset):
         logger.info("Loaded pyugrid cache")    
 
         logger.info("getMap Computing Triangulation Subset")
-        #check that this is correct lat/lon
+        #check that this is correct lat/lon NOTE: below we do this again IF UGRID.location = 'face'
         lon = ug.nodes[:,0]
         lat = ug.nodes[:,1]
         sub_idx = get_lat_lon_subset_idx(lon,lat,lonmin,latmin,lonmax,latmax)
@@ -1615,6 +1615,20 @@ def getMap(request, dataset):
             logger.info("getMap retrieving variables {0}".format(variables))
             logger.info("time = {0}".format(time))
 
+            # UGRID data has momentum (u,v) either on node (AKA vertices, eg. ADCIRC) or face (AKA triangle, eg. FVCOM/SELFE)
+            #     check the location attribute of the UGRID variable to determine which lon/lat to use (if face, need a different set)
+            location = set([v.location for v in variable])
+            if len(location) > 1:
+                logger.info("UGRID vector component variables require same 'location' attribute")
+                return blank_response(width, height)
+            
+            # hacky to do here, but in rush and it doesn't appear that replacing these within this scope will cause any problems
+            if location[0] == 'face':
+                lat = np.mean(lat[nv.flatten()].reshape(nv.shape),1)
+                lon = np.mean(lon[nv.flatten()].reshape(nv.shape),1)
+                sub_idx = get_lat_lon_subset_idx(lon,lat,lonmin,latmin,lonmax,latmax)
+
+
             #data_objs = [datasetnc.variables[v] for v in variables]
             data_objs = variable
 
@@ -1636,6 +1650,7 @@ def getMap(request, dataset):
                 else:
                     logger.info("Dimension Mismatch: data_obj.shape == {0} and time = {1}".format(data_obj.shape, time))
                     return blank_response(width, height)
+
             logger.info("len(data) = {0}".format(len(data)))
             logger.info("data[0].shape = {0}".format(data[0].shape))
             logger.info("data[1].shape = {0}".format(data[1].shape))
