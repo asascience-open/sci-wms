@@ -19,7 +19,9 @@ from django.db.models import Q
 
 from sciwms.apps.wms.models import Dataset as dbDataset
 from sciwms.libs.data.caching import update_dataset_cache
-from sciwms.util.cf import get_by_standard_name
+from sciwms.util.cf import get_by_standard_name, get_global_attribute
+
+from index_ngdc import get_temporal_extent, get_spatial_extent, get_layers
 
 import json
 import numpy as np
@@ -36,7 +38,7 @@ logger.addHandler(handler)
 
 default_scalar_plot = "pcolor_average_jet_None_None_grid_False"
 default_vector_plot = "vectors_average_jet_None_None_grid_40"
-
+""""
 def get_spatial_extent(nc):
     bb = []
     try:
@@ -82,7 +84,7 @@ def get_temporal_extent(nc):
 
     return temp_ext
 
-
+"""
 comt2 = {}
 comt2['pr_inundation_tropical'] = {}
 #UND ADCIRCSWAN
@@ -101,6 +103,7 @@ comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['url'] = 'http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/UND_ADCIRCSWAN/Hurricane_Georges_2D_prelim_no_waves/Output/fort.74.nc'
 # comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['variables']=['windx,windy']
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['layers']={'windx,windy':default_vector_plot}
+
 comt2['pr_inundation_tropical']['Hurricane_Georges_2D_prelim_no_waves_fort_74_nc']['category']='pr_inundation_tropical'
 
 
@@ -132,13 +135,16 @@ def idx_comt2():
 
         nc = ncDataset(pr_inundation[name]['url'],'r')
 
-        fbb = get_spatial_extent(nc)
+        fbb = get_spatial_extent(nc,name)
         sbb = [str(el) for el in fbb]
+
+        layers = get_layers(nc)
         js[name]['org_model'] = pr_inundation[name]['org_model']
         js[name]['category']  = pr_inundation[name]['category']
         js[name]['spatial']   = sbb
         js[name]['temporal']  = get_temporal_extent(nc)
-        js[name]['layers']    = pr_inundation[name]['layers']
+        # js[name]['layers']    = pr_inundation[name]['layers']
+        js[name]['layers']    = layers
         js[name]['storm']     = pr_inundation[name]['storm']
         js[name]['url']       = pr_inundation[name]['url']
 
