@@ -1759,7 +1759,9 @@ def getMap(request, dataset):
             i = np.unique(idx[0])
             j = np.unique(idx[1])
 
-            return v[i][j]
+            v = v[i,:]
+            v = v[:,j]
+            return v
 
 #----------
 
