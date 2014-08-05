@@ -271,6 +271,9 @@ def main():
     nupdated = 0
     csw_catalogue.getrecords2([uuid_filter], esn='full', maxrecords=999999)
     for i, (name, record) in enumerate(csw_catalogue.records.iteritems()):
+        if 'prelim' in name or 'preliminary' in name:
+            continue
+        
         print "Processing {0} of {1}".format(i+1,len(csw_catalogue.records))
         legal_name = re.sub('[ .!,;\-/\\\\]','_', name)
 
