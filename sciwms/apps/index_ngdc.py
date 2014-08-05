@@ -66,7 +66,8 @@ def get_spatial_extent(nc, legal_name):
 def get_temporal_extent(nc,time_var_name='time'):
     temp_ext = []
     
-    tobj = nc.variables.get(time_var_name)
+    # tobj = nc.variables.get(time_var_name)
+    tobj = get_by_standard_name(nc, 'time')
     if tobj:
         tkwargs = {}
         if hasattr(tobj, 'units'):
@@ -104,6 +105,7 @@ def get_layers(nc, vars=['depth','u,v']):
     nc_id = get_global_attribute(nc,'id')
     nc_model = get_global_attribute(nc,'model')
     print 'nc_id = {0}'.format(nc_id)
+    print 'nc_model = {0}'.format(nc_model)
 
     # going to loop through the variables in NetCDF object, if standard_name exists and is in util/cf map, add, else, ignore
     for variable_name, variable in nc.variables.iteritems():
@@ -111,6 +113,7 @@ def get_layers(nc, vars=['depth','u,v']):
         standard_name = nc.variables[variable_name].__dict__.get('standard_name', None)
         if standard_name == None:
             continue
+        print 'variable name = {0}, standard name = {1}'.format(variable_name, standard_name)
         # cell_methods (standard_name is not always unique in Dataset)
         cell_methods = nc.variables[variable_name].__dict__.get('cell_methods', None)
         # if cell_method specified, prepend cell_method to standard_name for uniqueness
@@ -316,7 +319,7 @@ def main():
             logger.debug("{0}: {1}, {2}".format(legal_name, spatial_ext, time_ext))
 
 
-            storms = ['IKE', 'RITA', '2005', '2007', '2010', 'EXTRATROPICAL CYCLONES']
+            storms = ['IKE', 'RITA','2004-2009', '2005', '2007', '2010', 'EXTRATROPICAL CYCLONES']
             storm = ""
             for strm in storms:
                 if strm.lower() in urls[legal_name].lower():
