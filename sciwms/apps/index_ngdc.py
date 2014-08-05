@@ -144,6 +144,10 @@ def get_layers(nc, vars=['depth','u,v']):
         layers['uwind,vwind'] = 'vectors_average_jet_0_50_grid_40' #TODO use scale_min/scale_max
         del layers['uwind']
         del layers['vwind']
+    if 'ubarotropic' in layers and 'vbarotropic' in layers:
+        layers['ubarotropic,vbarotropic'] = 'vectors_average_jet_0_2_grid_40' #TODO use scale_min/scale_max
+        del layers['ubarotropic']
+        del layers['vbarotropic']
 
     # no time, latitude, longitude passed back TODO: hack
     layers.pop('time', None)
