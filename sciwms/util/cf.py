@@ -11,7 +11,7 @@ map = {
    'hs': {'standard_name':'sea_surface_wave_significant_height', 'scale_min':'0', 'scale_max':'12'},
    'uwind': {'standard_name':'eastward_wind', 'scale_min':'0', 'scale_max':'80'},
    'vwind': {'standard_name':'northward_wind', 'scale_min':'0', 'scale_max':'80'},
-   'salinity': {'standard_name':'sea_walter_salinity', 'scale_min':'32', 'scale_max':'37'},
+   'salinity': {'standard_name':'sea_water_salinity', 'scale_min':'32', 'scale_max':'37'},
    'sst': {'standard_name':'sea_water_temperature', 'scale_min':'0', 'scale_max':'40'},
    'ubarotropic': {'standard_name':'barotropic_eastward_sea_water_velocity', 'scale_min':'0', 'scale_max':'2'},
    'vbarotropic': {'standard_name':'barotropic_northward_sea_water_velocity', 'scale_min':'0', 'scale_max':'2'},
