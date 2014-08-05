@@ -319,7 +319,8 @@ def main():
             logger.debug("{0}: {1}, {2}".format(legal_name, spatial_ext, time_ext))
 
 
-            storms = ['IKE', 'RITA','2004-2009', '2005', '2007', '2010', 'EXTRATROPICAL CYCLONES']
+            #2004 is for esturine hypoxia
+            storms = ['2004-2009','2005-2011','2004','IKE', 'RITA','2005', '2007', '2010', 'EXTRATROPICAL CYCLONES']
             storm = ""
             for strm in storms:
                 if strm.lower() in urls[legal_name].lower():
