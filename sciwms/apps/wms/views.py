@@ -1740,25 +1740,37 @@ def getMap(request, dataset):
                 (lon <= (lonmax + padding)) & (lon >= (lonmin - padding)),)).squeeze()
 
         def contourf_response(lon_subset, lat_subset, data, lonmin, latmin, lonmax, latmax, width, height, dpi=80, nlvls = 15):
+            logger.info("Rendering c-grid countourf.")
             fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
             fig.set_alpha(0)
             fig.set_figheight(height/dpi)
             fig.set_figwidth(width/dpi)
             projection = request.GET["projection"]
-            m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
-                        urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
-                        resolution=None,
-                        lat_ts = 0.0,
-                        suppress_ticks=True)
-            m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
+
+            if projection == 'merc':
+                proj = mi #default mercator projection object
+            else:
+                logger.error("Unsupported Projection: {0}". format(proj))
+
+            logger.info("Computing mercator projection.")
+            lonmerc, latmerc = proj(lon_subset.flatten(), lat_subset.flatten())
+            logger.info("Done computing mercator projection.")
+            
+            ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
             lvls = np.linspace(data.min(), data.max(), nlvls)
-            logger.info("lvls.shape = {0}, lvls.min() = {1}, lvls.max() = {2}".format(lvls.shape, lvls.min(), lvls.max()))
-            m.ax.contourf(lon_subset, lat_subset, data, levels=lvls)
-            m.ax.set_xlim(lonmin, lonmax)
-            m.ax.set_ylim(latmin, latmax)
-            m.ax.set_frame_on(False)
-            m.ax.set_clip_on(False)
-            m.ax.set_position([0, 0, 1, 1])
+            
+            ax.contourf(lonmerc.reshape(lon_subset.shape), latmerc.reshape(lat_subset.shape), data, levels=lvls)
+            
+            merclatmax = float(request.GET["latmax"])
+            merclatmin = float(request.GET["latmin"])
+            merclonmax = float(request.GET["lonmax"])
+            merclonmin = float(request.GET["lonmin"])
+            
+            ax.set_xlim(merclonmin, merclonmax)
+            ax.set_ylim(merclatmin, merclatmax)
+            ax.set_frame_on(False)
+            ax.set_clip_on(False)
+            ax.set_position([0, 0, 1, 1])
             canvas = FigureCanvasAgg(fig)
             response = HttpResponse(content_type='image/png')
             canvas.print_png(response)
