@@ -1431,96 +1431,52 @@ def getMap(request, dataset):
                                  width,
                                  height,
                                  dpi=80.0,
-                                 nlvls = 15,
-                                 toolkit='basemap'):
+                                 nlvls = 15):
             
             logger.info("tricontourf: [lonmin = {0},latmin = {1}, lonmax = {2}, latmax = {3}]".format(lonmin,latmin,lonmax,latmax))
             projection = request.GET["projection"]
             logger.info("projection={0}".format(projection))
-            # height = height - 100
-            if toolkit.lower() == 'cartopy':
-                import cartopy.crs as ccrs
-                
-                logger.info("Using cartopy toolkit.")
-                fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-                fig.set_alpha(0)
-                fig.set_figheight(float(height)/dpi)
-                fig.set_figwidth(float(width)/dpi)
-                fig.patch.set_visible(False)
-                fig.patch.set_alpha(0)
 
-                ax = fig.add_axes([0,0,1,1],
-                                  xticks=[],
-                                  yticks=[],
-                                  frameon=False,
-                                  projection=ccrs.Mercator())
+            if projection == 'merc':
+                proj = mi #alex's default mercator projection object
+            else:
+                logger.error("Unsupported Projction: {0}".format(proj))
+            
+            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
+            fig.set_alpha(0)
+            fig.set_figheight(height/dpi)
+            fig.set_figwidth(width/dpi)
 
-                lvls = np.linspace(data.min(), data.max(), 15)
-                # ax.tricontourf(triang_subset, data, levels=lvls)
-                ax.coastlines()
+            ax = fig.add_axes([0., 0., 1., 1.], xticks=[], yticks=[])
+            ax.set_axis_off()
 
-                ax.set_xlim(lonmin, lonmax)
-                ax.set_ylim(latmin, latmax)
-                ax.set_frame_on(False)
-                ax.set_clip_on(False)
-                ax.set_aspect('auto')
-                ax.background_patch.set_alpha(0)
-                ax.set_axis_off()
-                
-            elif toolkit == 'basemap'.lower():
-                logger.info('Using basemap toolkit.')
-                fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-                fig.set_alpha(0)
-                fig.set_figheight(height/dpi)
-                fig.set_figwidth(width/dpi)
+            lvls = np.linspace(data.min(), data.max(), nlvls)
 
-                x = triang_subset.x
-                y = triang_subset.y
-                xmin = np.min(x)
-                xmax = np.max(x)
-                logger.info("xmin = {0}, lonmin = {1}".format(xmin,lonmin))
-                logger.info("xmax = {0}, lonmax = {1}".format(xmax,lonmax))
+            logger.info("Computing mercator projection.")
+            triang_subset.x, triang_subset.y = proj(triang_subset.x, triang_subset.y)
+            logger.info("Done computing mercator projection.")
+            logger.info("triang_subset.x.shape = {0}".format(triang_subset.x.shape))
+            logger.info("triang_subset.y.shape = {0}".format(triang_subset.y.shape))
+            logger.info("triang_subset.x[:10] = {0}".format(triang_subset.x[:10]))
 
-                m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
-                        urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
-                        resolution='c',
-                        lat_ts = 0.0,
-                        suppress_ticks=True)
-                
-                m.ax = fig.add_axes([0., 0., 1., 1.], xticks=[], yticks=[])
-                m.ax.set_axis_off()
-                lvls = np.linspace(data.min(), data.max(), nlvls)
-        
-                merc_xy = np.atleast_2d([m(x,y) for x,y in zip(triang_subset.x,triang_subset.y)])
-                logger.info("merc_xy.shape = {0}".format(merc_xy.shape))
-                
-                merc_tri = Tri.Triangulation(merc_xy[:,0], merc_xy[:,1], triang_subset.triangles)
-                
-                m.ax.tricontourf(merc_tri, data, levels=lvls)
-        
-                llcrnr = m(lonmin,latmin)
-                upcrnr = m(lonmax,latmax)
-        
-                merclatmax = float(request.GET["latmax"])
-                merclatmin = float(request.GET["latmin"])
-                merclonmax = float(request.GET["lonmax"])
-                merclonmin = float(request.GET["lonmin"])
-                logger.info("llcrnr = {0}".format(llcrnr))
-                logger.info("upcrnr = {0}".format(upcrnr))
-                logger.info("request_llcrnr = {0}".format((merclonmin,merclatmin)))
-                logger.info("request_upcrnr = {0}".format((merclonmax,merclatmax)))
-                
-                # m.ax.set_xlim(merclonmin, merclonmax)
-                # m.ax.set_ylim(merclatmin, merclatmax)
-                m.ax.set_xlim(llcrnr[0], upcrnr[0])
-                m.ax.set_ylim(llcrnr[1], upcrnr[1])
-                
-                # m.ax.set_xlim(lonmin, lonmax)
-                # m.ax.set_ylim(latmin, latmax)
-                m.ax.set_frame_on(False)
-                m.ax.set_clip_on(False)
-                m.ax.set_position([0, 0, 1, 1])
-                plt.axis('off')
+            ax.tricontourf(triang_subset, data, levels=lvls)
+
+            merclatmax = float(request.GET["latmax"])
+            merclatmin = float(request.GET["latmin"])
+            merclonmax = float(request.GET["lonmax"])
+            merclonmin = float(request.GET["lonmin"])
+
+            logger.info("request_llcrnr = {0}".format((merclonmin,merclatmin)))
+            logger.info("request_upcrnr = {0}".format((merclonmax,merclatmax)))
+                        
+            ax.set_xlim(merclonmin, merclonmax)
+            ax.set_ylim(merclatmin, merclatmax)
+
+            ax.set_frame_on(False)
+            ax.set_clip_on(False)
+            ax.set_position([0, 0, 1, 1])
+            
+            plt.axis('off')
 
             canvas = FigureCanvasAgg(fig)
             response = HttpResponse(content_type='image/png')
