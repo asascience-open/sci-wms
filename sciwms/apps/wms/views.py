@@ -1475,7 +1475,7 @@ def getMap(request, dataset):
             return response
 
         def ugrid_quiver_response(lon, lat, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80):
-            logger.info("Rendering ugrid quiver response.")
+            logger.debug("Rendering ugrid quiver response.")
             fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
             fig.set_alpha(0)
             fig.set_figheight(height/dpi)
@@ -1487,7 +1487,7 @@ def getMap(request, dataset):
             projection = request.GET["projection"]
             if projection == 'merc':
                 proj = mi #alex's default mercator projection object
-                logger.info("Using default mercator projection.")
+                logger.debug("Using default mercator projection.")
             else:
                 logger.error("Unsupported Projction: {0}".format(proj))
                 return blank_response(width,height)
@@ -1495,13 +1495,9 @@ def getMap(request, dataset):
             
             ax =  fig.add_axes([0,0,1,1],xticks=[],yticks=[])
             
-            logger.info("Computing mercator projection.")
+            logger.debug("Computing mercator projection.")
             triang_subset.x, triang_subset.y = proj(triang_subset.x, triang_subset.y)
-            logger.info("Done computing mercator projection.")
-
-            logger.info("triang_subset.x[:10] = {0}".format(triang_subset.x[:10]))
-            logger.info("triang_subset.y[:10] = {0}".format(triang_subset.y[:10]))
-                        
+            logger.debug("Done computing mercator projection.")
             
             #plot unit vectors
             mags = np.sqrt(dx**2 + dy**2)
@@ -1515,8 +1511,6 @@ def getMap(request, dataset):
 
             ax.set_xlim(merclonmin, merclonmax)
             ax.set_ylim(merclatmin, merclatmax)
-            # ax.set_xlim(lonmin, lonmax)
-            # ax.set_ylim(latmin, latmax)
             ax.set_frame_on(False)
             ax.set_clip_on(False)
             ax.set_position([0, 0, 1, 1])
