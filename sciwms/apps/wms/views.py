@@ -49,6 +49,8 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
+import pyproj
+
 # Other random "from" imports
 from rtree import index as rindex
 from collections import deque
@@ -932,7 +934,7 @@ def getFeatureInfo(request, dataset):
      /wms/GOM3/?ELEVATION=1&LAYERS=temp&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=facets_average_jet_0_32_node_False&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&SRS=EPSG:3857&BBOX=-7949675.196111,5078194.822174,-7934884.63114,5088628.476533&X=387&Y=196&INFO_FORMAT=text/csv&WIDTH=774&HEIGHT=546&QUERY_LAYERS=salinity&TIME=2012-08-14T00:00:00/2012-08-16T00:00:00
     """
     from datetime import date
-    from mpl_toolkits.basemap import pyproj
+    import pyproj
     X = float(request.GET['x'])
     Y = float(request.GET['y'])
     box = request.GET["bbox"]
@@ -1280,18 +1282,6 @@ def getMap(request, dataset):
     '''
     the meat and bones of getMap
     '''
-    from mpl_toolkits.basemap import pyproj
-    from matplotlib.figure import Figure
-
-    #output_path = os.path.join(config.fullpath_to_wms, 'src', 'pywms', 'sciwms_wms')
-    # Set up Logger
-    #logger = multiprocessing.get_logger()
-    #logger.setLevel(logging.ERROR)
-    #handler = logging.FileHandler('%s.log' % output_path)
-    #formatter = logging.Formatter(fmt='[%(asctime)s] - <<%(levelname)s>> - |%(message)s|')
-    #handler.setFormatter(formatter)
-    #logger.addHandler(handler)
-
 # ----------------------------------------------
 # some shared methods used many places in getMap
     def blank_response(width, height, dpi=5):
@@ -1441,6 +1431,7 @@ def getMap(request, dataset):
                 proj = mi #alex's default mercator projection object
             else:
                 logger.error("Unsupported Projction: {0}".format(proj))
+                return blank_response(width,height)
             
             fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
             fig.set_alpha(0)
@@ -1484,37 +1475,59 @@ def getMap(request, dataset):
             return response
 
         def ugrid_quiver_response(lon, lat, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80):
-            # fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-            # fig.set_alpha(0)
-            # fig.set_figheight(height/dpi)
-            # fig.set_figwidth(width/dpi)
-            import cartopy.crs as ccrs
-            fig = Figure(dpi=dpi, facefolor='none',edgecolor='none')
-            # fig, ax = plt.subplots(dpi=dpi, facecolor='none', edgecolor='none')
+            logger.info("Rendering ugrid quiver response.")
+            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
             fig.set_alpha(0)
-            
             fig.set_figheight(height/dpi)
             fig.set_figwidth(width/dpi)
+            
+            ax = fig.add_axes([0., 0., 1., 1.], xticks=[], yticks=[])
+            ax.set_axis_off()
+            
             projection = request.GET["projection"]
-            # m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
-            #             urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
-            #             resolution=None,
-            #             lat_ts = 0.0,
-            #             suppress_ticks=True)
-            ax =  fig.add_axes([0,0,1,1],xticks=[],yticks=[],projection=ccrs.Mercator())
-            # m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
+            if projection == 'merc':
+                proj = mi #alex's default mercator projection object
+                logger.info("Using default mercator projection.")
+            else:
+                logger.error("Unsupported Projction: {0}".format(proj))
+                return blank_response(width,height)
+            
+            
+            ax =  fig.add_axes([0,0,1,1],xticks=[],yticks=[])
+            
+            logger.info("Computing mercator projection.")
+            triang_subset.x, triang_subset.y = proj(triang_subset.x, triang_subset.y)
+            logger.info("Done computing mercator projection.")
+
+            logger.info("triang_subset.x[:10] = {0}".format(triang_subset.x[:10]))
+            logger.info("triang_subset.y[:10] = {0}".format(triang_subset.y[:10]))
+                        
             
             #plot unit vectors
             mags = np.sqrt(dx**2 + dy**2)
-            m.ax.quiver(lon, lat, dx/mags, dy/mags, mags)
+            logger.info("dx[:10] = {0}".format(dx[:10]))
+            logger.info("np.max(dx) = {0}".format(np.max(dx)))
+            
+            logger.info("dy[:10] = {0}".format(dy[:10]))
+            logger.info("np.max(dy) = {0}".format(np.max(dy)))
 
+            logger.info("mags[:10] = {0}".format(mags[:10]))
             logger.info("mags.shape = {0}".format(mags.shape))
-            logger.info("quiver plotted.")
-            m.ax.set_xlim(lonmin, lonmax)
-            m.ax.set_ylim(latmin, latmax)
-            m.ax.set_frame_on(False)
-            m.ax.set_clip_on(False)
-            m.ax.set_position([0, 0, 1, 1])
+            ax.quiver(triang_subset.x, triang_subset.y, dx/mags, dy/mags, mags)
+
+            merclatmax = float(request.GET["latmax"])
+            merclatmin = float(request.GET["latmin"])
+            merclonmax = float(request.GET["lonmax"])
+            merclonmin = float(request.GET["lonmin"])
+
+            ax.set_xlim(merclonmin, merclonmax)
+            ax.set_ylim(merclatmin, merclatmax)
+            # ax.set_xlim(lonmin, lonmax)
+            # ax.set_ylim(latmin, latmax)
+            ax.set_frame_on(False)
+            ax.set_clip_on(False)
+            ax.set_position([0, 0, 1, 1])
+            
             canvas = FigureCanvasAgg(fig)
             response = HttpResponse(content_type='image/png')
             canvas.print_png(response)
@@ -1586,6 +1599,7 @@ def getMap(request, dataset):
 
         datasetnc = netCDF4.Dataset(url,'r')
         time = get_nearest_start_time(datasetnc, datestart)
+
         
         logger.info("time = {0}".format(time))
         
