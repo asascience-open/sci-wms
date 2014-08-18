@@ -1505,14 +1505,7 @@ def getMap(request, dataset):
             
             #plot unit vectors
             mags = np.sqrt(dx**2 + dy**2)
-            logger.info("dx[:10] = {0}".format(dx[:10]))
-            logger.info("np.max(dx) = {0}".format(np.max(dx)))
-            
-            logger.info("dy[:10] = {0}".format(dy[:10]))
-            logger.info("np.max(dy) = {0}".format(np.max(dy)))
 
-            logger.info("mags[:10] = {0}".format(mags[:10]))
-            logger.info("mags.shape = {0}".format(mags.shape))
             ax.quiver(triang_subset.x, triang_subset.y, dx/mags, dy/mags, mags)
 
             merclatmax = float(request.GET["latmax"])
