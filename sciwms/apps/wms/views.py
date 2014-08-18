@@ -1702,19 +1702,6 @@ def getMap(request, dataset):
                 lon[sub_idx], lat[sub_idx], data[0][sub_idx], data[1][sub_idx],
                 lonmin, latmin, lonmax, latmax, width, height)
 
-            # response = \
-            #     layered_quiver_response(lon,
-            #                             lat,
-            #                             triang_subset,
-            #                             sub_idx,
-            #                             data[0],
-            #                             data[1],
-            #                             lonmin,
-            #                             latmin,
-            #                             lonmax,
-            #                             latmax,
-            #                             width,
-            #                             height)
         else:
             #don't know how to handle more than 2 variables
             logger.info("Cannot handle more than 2 variables per request.")
@@ -1782,25 +1769,36 @@ def getMap(request, dataset):
             fig.set_alpha(0)
             fig.set_figheight(height/dpi)
             fig.set_figwidth(width/dpi)
+            
             projection = request.GET["projection"]
-            m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
-                        urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
-                        resolution=None,
-                        lat_ts = 0.0,
-                        suppress_ticks=True)
-            m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
+            
+            if projection == 'merc':
+                proj = mi #default mercator projection object
+                logger.debug("Using default mercator projection.")
+            else:
+                logger.error("Unsupported Projction: {0}".format(proj))
+                return blank_response(width,height)
+            
+            ax =  fig.add_axes([0,0,1,1],xticks=[],yticks=[])
 
+            logger.debug("Computing projected coordinates.")
+            projlon, projlat = proj(lon, lat)
+            logger.debug("Done computing projected coordinages.")
             #plot unit vectors
             mags = np.sqrt(dx**2 + dy**2)
-            m.ax.quiver(lon, lat, dx/mags, dy/mags, mags)
-
-            logger.info("mags.shape = {0}".format(mags.shape))
-            logger.info("quiver plotted.")
-            m.ax.set_xlim(lonmin, lonmax)
-            m.ax.set_ylim(latmin, latmax)
-            m.ax.set_frame_on(False)
-            m.ax.set_clip_on(False)
-            m.ax.set_position([0, 0, 1, 1])
+            
+            merclatmax = float(request.GET["latmax"])
+            merclatmin = float(request.GET["latmin"])
+            merclonmax = float(request.GET["lonmax"])
+            merclonmin = float(request.GET["lonmin"])
+            
+            ax.quiver(projlon, projlat, dx/mags, dy/mags, mags)
+            ax.set_xlim(merclonmin, merclonmax)
+            ax.set_ylim(merclatmin, merclatmax)
+            ax.set_frame_on(False)
+            ax.set_clip_on(False)
+            ax.set_position([0, 0, 1, 1])
+            
             canvas = FigureCanvasAgg(fig)
             response = HttpResponse(content_type='image/png')
             canvas.print_png(response)
