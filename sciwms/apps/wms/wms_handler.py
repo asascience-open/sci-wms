@@ -79,7 +79,7 @@ class wms_handler(object):
         magnitude_bool = styles[6]
 
         requestobj._set_get( {u'latmax':latmax, u'lonmax':lonmax,
-                          u'projection':u'merc', u'layer':levels,
+                          u'projection':u'merc', u'layer':levels,  # FYI...layer is actually WMS 'ELEVATION', stored in Python var levels, mapped now to the 'layer' part of the request. see also: insanity
                           u'datestart':timestart, u'dateend':timeend,
                           u'lonmin':lonmin, u'latmin':latmin,
                           u'height':height, u'width':width,

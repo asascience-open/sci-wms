@@ -44,6 +44,9 @@ except:
 
 from django.conf import settings
 
+import gc
+import pyugrid
+
 output_path = os.path.join(settings.PROJECT_ROOT, 'logs', 'sciwms_wms.log')
 # Set up Logger
 logger = multiprocessing.get_logger()
@@ -55,8 +58,31 @@ logger.addHandler(handler)
 
 time_units = 'hours since 1970-01-01'
 
-
 def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
+    try:
+        logger.info("Trying pyugrid")
+        #try to load ugrid
+        ug = pyugrid.UGrid.from_ncfile(url)
+
+        logger.info("Identified as UGrid---Using pyugrid to cache")
+        
+        #create the local cache temp file
+        nclocalpath = os.path.join(settings.TOPOLOGY_PATH, dataset_name+".nc.updating")
+        ug.save_as_netcdf(nclocalpath)
+        
+        #move local cache temp to final destination(overwrite existing)
+        shutil.move(nclocalpath, nclocalpath.replace(".updating", ""))
+
+    except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        logger.info("Cannot open with pyugrid: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        logger.info("Trying old sciwms method")
+        create_topology_old(dataset_name, url, lat_var='lat', lon_var = 'lon')
+    finally:
+        #release unreferenced memory
+        gc.collect()
+        
+def create_topology_old(dataset_name, url, lat_var='lat', lon_var='lon'):
     try:
         #with s1:
         nclocalpath = os.path.join(settings.TOPOLOGY_PATH, dataset_name+".nc.updating")
