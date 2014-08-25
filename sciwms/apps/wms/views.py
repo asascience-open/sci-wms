@@ -105,6 +105,16 @@ def datasets(request):
         logger.info(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
     return HttpResponse(data, mimetype='application/json')
 
+def colormaps(request):
+    ret = json.dumps([m for m in plt.cm.datad if not m.endswith("_r")])
+    if 'callback' in request.REQUEST:
+        ret = "{0}({1})".format(request.REQUEST['callback'], ret)
+
+    logger.debug("Returning colormaps: {0}".format(ret))
+
+    return HttpResponse(ret, mimetype='application/json')
+    
+
 
 def grouptest(request, group):
     from django.template import Context
@@ -343,8 +353,14 @@ def wms(request, dataset):
         request = lower_request(request)
         reqtype = request.GET['request']
         if reqtype.lower() == 'getmap':
-            request = database_request_interaction(request, dataset)
+
+
+            # from sciwms.apps.wms.wms_handler import get_style_list
             import sciwms.apps.wms.wms_handler as wms
+            logger.info("style_list = {0}".format(wms.get_style_list(request)))
+            
+            request = database_request_interaction(request, dataset)            
+
             handler = wms.wms_handler(request)
             action_request = handler.make_action_request(request)
             if action_request is not None:
@@ -1282,28 +1298,30 @@ def getMap(request, dataset):
     '''
     the meat and bones of getMap
     '''
+    from sciwms.apps.wms.getMapUtils import blank_response
+    response = HttpResponse(content_type='image/png')
 # ----------------------------------------------
 # some shared methods used many places in getMap
-    def blank_response(width, height, dpi=5):
-        """
-        return a transparent (blank) response
-        used for tiles with no intersection with the current view or for some other error.
-        """
-        fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-        fig.set_alpha(0)
-        ax = fig.add_axes([0, 0, 1, 1])
-        #I don't know why height and width is divided by dpi,
-        #this is left over from old sciwms code
-        #maybe response needs to be in units of inches?
-        fig.set_figheight(height/dpi)
-        fig.set_figwidth(width/dpi)
-        ax.set_frame_on(False)
-        ax.set_clip_on(False)
-        ax.set_position([0, 0, 1, 1])
-        canvas = FigureCanvasAgg(fig)
-        response = HttpResponse(content_type='image/png')
-        canvas.print_png(response)
-        return response
+    # def blank_response(width, height, dpi=5):
+    #     """
+    #     return a transparent (blank) response
+    #     used for tiles with no intersection with the current view or for some other error.
+    #     """
+    #     fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
+    #     fig.set_alpha(0)
+    #     ax = fig.add_axes([0, 0, 1, 1])
+    #     #I don't know why height and width is divided by dpi,
+    #     #this is left over from old sciwms code
+    #     #maybe response needs to be in units of inches?
+    #     fig.set_figheight(height/dpi)
+    #     fig.set_figwidth(width/dpi)
+    #     ax.set_frame_on(False)
+    #     ax.set_clip_on(False)
+    #     ax.set_position([0, 0, 1, 1])
+    #     canvas = FigureCanvasAgg(fig)
+    #     response = HttpResponse(content_type='image/png')
+    #     canvas.print_png(response)
+    #     return response
 
 # ----------------------------------------------
 
@@ -1341,6 +1359,9 @@ def getMap(request, dataset):
     actions = request.GET["actions"]
     actions = set(actions.split(","))
 
+    for k,v in request.GET.iteritems():
+        logger.debug("request.GET[{0}] = {1}".format(k,v))
+
     # Get the colormap requested, the color limits/scaling
     colormap = request.GET["colormap"]
     if request.GET["climits"][0] != "None":
@@ -1362,55 +1383,7 @@ def getMap(request, dataset):
     logger.debug("getMap Subset Bounding Box: {0}, {1}, {2}, {3}".format(lonmin,latmin,lonmax,latmax))
 
     try:
-        #THIS IS ADDED BY BRANDON TO ADD SUPPORT FOR PYUGRID!!!!
-        
-        #THESE SHOULD BE SOMEHWERE ELSE JUST IN A RUSH NOW
-        def get_lat_lon_subset_idx(lon,lat,lonmin,latmin,lonmax,latmax,padding=0.18):
-            """
-            A function to return the indicies of lat, lon within a bounding box.
-            Padding is leftover from old sciwms code, I believe it was to include triangles
-            lying just outside the region of interest so that there are no holes in the
-            rendered image.
-            """
-            return np.asarray(np.where(
-                (lat <= (latmax + padding)) & (lat >= (latmin - padding)) &
-                (lon <= (lonmax + padding)) & (lon >= (lonmin - padding)),)).squeeze()
-                
-        def get_nv_subset_idx(nv, sub_idx):
-            """
-            Return row indicies into the nv data structure which have indicies
-            inside the bounding box defined by get_lat_lon_subset_idx
-            """
-            return np.asarray(np.where(np.all(np.in1d(nv,sub_idx).reshape(nv.shape),1))).squeeze()
-
-        def get_nearest_start_time(nc,datestart):
-            time = None
-            try:
-                times = nc.variables['time'][:]
-                datestart = datetime.datetime.strptime(datestart, "%Y-%m-%dT%H:%M:%S" )
-            
-                # datetime obj --> netcdf datenum
-                datestart = round(netCDF4.date2num(datestart, units=nc.variables['time'].units))  
-                logger.info("datestart = {0}".format(datestart))
-
-                #bisect_right returns the index that would maintain sorted order if
-                #the element (in this case datestart) was inserted to the right of an element
-                time = bisect.bisect_right(times,datestart)
-
-                #goal is to find closest time index, or do we always use the "one before" or "one after"?            
-                #This mod will get the nearest element by checking the one after vs. the one before
-                if time == len(times):
-                    time -= 1
-                elif time != 0:
-                    time = time if abs(times[time]-datestart) < abs(time[time-1]-datestart) else time-1
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                logger.info("Dataset doesn't contain temporal dimension: "
-                            + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
-            finally:
-                del times
-            
-            return time
+        from .getMapUtils import get_lat_lon_subset_idx, get_nv_subset_idx, get_nearest_start_time
 
         def tricontourf_response(triang_subset,
                                  data,
@@ -1427,11 +1400,13 @@ def getMap(request, dataset):
             projection = request.GET["projection"]
             logger.info("projection={0}".format(projection))
 
-            if projection == 'merc':
-                proj = mi #alex's default mercator projection object
-            else:
-                logger.error("Unsupported Projction: {0}".format(proj))
-                return blank_response(width,height)
+            from sciwms.util import get_pyproj
+            proj = get_pyproj(request)
+            # if projection == 'merc':
+            #     proj = mi #alex's default mercator projection object
+            # else:
+            #     logger.error("Unsupported Projction: {0}".format(proj))
+            #     return blank_response(width,height)
             
             fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
             fig.set_alpha(0)
@@ -1490,7 +1465,9 @@ def getMap(request, dataset):
                 logger.debug("Using default mercator projection.")
             else:
                 logger.error("Unsupported Projction: {0}".format(proj))
-                return blank_response(width,height)
+                canvas = blank_response(width,height)
+                canvas.print_png(response)
+                return response
             
             
             ax =  fig.add_axes([0,0,1,1],xticks=[],yticks=[])
@@ -1520,41 +1497,6 @@ def getMap(request, dataset):
             canvas.print_png(response)
             return response
 
-        def layered_quiver_response(lon, lat, dx, dy, sub_idx, triang_subset, lonmin, latmin, lonmax, latmax, width, height, dpi=80, nlvls=20):
-            logger.info("In layered_quiver_response")
-            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-            fig.set_alpha(0)
-            fig.set_figheight(height/dpi)
-            fig.set_figwidth(width/dpi)
-            projection = request.GET["projection"]
-            m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
-                        urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
-                        resolution=None,
-                        lat_ts = 0.0,
-                        suppress_ticks=True)
-            m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
-
-            mags = np.sqrt(dx**2 + dy**2)
-            lvls = np.linspace(mags.min(), mags.max(), nlvls)
-            
-            m.ax.tricontourf(triang_subset, mags, levels=lvls)
-            
-            logger.info("tricontourf done.")
-            
-            m.ax.quiver(lon,lat,dx/mags,dy/mags)
-            logger.info("quiver done.")
-            
-            m.ax.set_xlim(lonmin, lonmax)
-            m.ax.set_ylim(latmin, latmax)
-            m.ax.set_frame_on(False)
-            m.ax.set_clip_on(False)
-            m.ax.set_position([0, 0, 1, 1])
-            canvas = FigureCanvasAgg(fig)
-            response = HttpResponse(content_type='image/png')
-            canvas.print_png(response)
-            return response
-
-        
         # actual try block starts here (def methods only above)
         import matplotlib.tri as Tri
 
@@ -1578,7 +1520,9 @@ def getMap(request, dataset):
         #return a transparent tile
         if (len(sub_idx) == 0) or (len(nv_subset_idx) == 0):
             logger.info("No triangles in field of view, returning empty tile.")
-            return blank_response(width, height);
+            canvas = blank_response(width,height)
+            canvas.print_png(response)
+            return response
 
         triang_subset = Tri.Triangulation(lon,lat,triangles=nv[nv_subset_idx])
         
@@ -1615,7 +1559,10 @@ def getMap(request, dataset):
             v = cf.map.get(var, None)
             if v == None:
                 logger.warning('requested LAYERS %s, no map exists to CF standard_name' % var)
-                return blank_response(width, height) # was continue
+                canvas = blank_response(width, height)
+                canvas.print_png(response)
+                return response
+            
             variable = cf.get_by_standard_name(datasetnc, v['standard_name'])
 
             logger.info('getMap retrieving LAYER %s with standard_name %s' % (var, v['standard_name']))
@@ -1636,7 +1583,9 @@ def getMap(request, dataset):
                 data = data_obj[:]
             else:
                 logger.info("Dimension Mismatch: data_obj.shape == {0} and time = {1}".format(data_obj.shape, time))
-                return blank_response(width, height)
+                canvas = blank_response(width, height)
+                canvas.print_png(response)
+                return response
             
             logger.info("getMap finished retrieving variable {0}, serving tricontourf response".format(variables)) # TODO this logger statement (variables is list?)
             response = tricontourf_response(triang_subset, data, lonmin, latmin, lonmax, latmax, width, height)
@@ -1650,12 +1599,18 @@ def getMap(request, dataset):
             v = [cf.map.get(var, None) for var in variables]
             if None in v:
                 logger.warning('requested LAYERS {0}, no map exists to CF standard_name for at least one of these'.format(variables))
-                return blank_response(width, height) # was continue
+                canvas = blank_response(width,height)
+                canvas.print_png(response)
+                return response
+                
             variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), v)
 
             if None in variable:
                 logger.warning('variable not found for at least these'.format(variables))
-                return blank_response(width, height) # was continue
+                canvas = blank_response(width, height)
+                canvas.print_png(response)
+                return response
+                # return blank_response(width, height) # was continue
 
             logger.info("getMap retrieving variables {0}".format(variables))
             logger.info("time = {0}".format(time))
@@ -1665,7 +1620,10 @@ def getMap(request, dataset):
             location = set([v.__dict__.get('location', None) for v in variable])
             if len(location) > 1:
                 logger.info("UGRID vector component variables require same 'location' attribute")
-                return blank_response(width, height)
+                canvas = blank_response(width, height)
+                canvas.print_png(response)
+                return response
+                # return blank_response(width, height)
             
             # hacky to do here, but in rush and it doesn't appear that replacing these within this scope will cause any problems
             if list(location)[0] == 'face':
@@ -1705,7 +1663,10 @@ def getMap(request, dataset):
         else:
             #don't know how to handle more than 2 variables
             logger.info("Cannot handle more than 2 variables per request.")
-            return blank_response(width, height)
+            # return blank_response(width, height)
+            canvas = blank_response(width, height)
+            canvas.print_png(response)
+            return response
 
         # topology.close()
         datasetnc.close()
