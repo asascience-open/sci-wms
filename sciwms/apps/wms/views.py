@@ -90,7 +90,21 @@ def crossdomain(request):
 def datasets(request):
     
     try:
-        js_obj = Dataset.objects.get(name='json_all')
+        try:
+            js_obj = Dataset.objects.get(name='json_all')
+        except:
+            json_all = []
+            for dataset in Dataset.objects.all():
+                json_all.append(dataset.json)
+
+            js_obj = Dataset.objects.create(name="json_all",
+                                            title="",
+                                            uri="",
+                                            abstract="",
+                                            keep_up_to_date=False,
+                                            display_all_timesteps=False)
+            js_obj.json = json.dumps(json_all)
+            js_obj.save()
 
         data = json.dumps(js_obj.json)
         if 'callback' in request.REQUEST:
@@ -106,13 +120,44 @@ def datasets(request):
     return HttpResponse(data, mimetype='application/json')
 
 def colormaps(request):
-    ret = json.dumps([m for m in plt.cm.datad if not m.endswith("_r")])
-    if 'callback' in request.REQUEST:
-        ret = "{0}({1})".format(request.REQUEST['callback'], ret)
+    """
+    Get either a json list of available matplotlib colormaps or return an image preview.
+    EX 1 localhost:8080/wms/colormaps will return a list of colormaps
+    EX 2 localhost:8080/wms/colormaps/colormap=summer will return a small png preview
+    """
+    #if not requesting a specific colormap, get a list (json) of colormaps
+    #if requesting a specific colormap, get a small png preview
+    colormap = request.GET.get('colormap')
+    logger.debug("colormap = {0}".format(colormap))
+    if not colormap:
+        import matplotlib.pyplot as plt
+        ret = json.dumps([m for m in plt.cm.datad if not m.endswith("_r")])
+        if 'callback' in request.REQUEST:
+            ret = "{0}({1})".format(request.REQUEST['callback'], ret)
 
-    logger.debug("Returning colormaps: {0}".format(ret))
+        logger.debug("Returning colormaps: {0}".format(ret))
 
-    return HttpResponse(ret, mimetype='application/json')
+        return HttpResponse(ret, mimetype='application/json')
+    else:
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
+    
+        a = np.linspace(0,1,256).reshape(1,-1)
+        a = np.vstack((a,a))
+        
+        fig = plt.figure(dpi=100., facecolor='none', edgecolor='none')
+        fig.set_alpha(0)
+        fig.set_figwidth(5)
+        fig.set_figheight(0.13)
+        ax = fig.add_axes([0.,0.,1.,1.], xticks=[], yticks=[])
+        ax.set_axis_off();
+        ax.imshow(a, aspect='auto',cmap=plt.get_cmap(colormap))
+        
+        canvas = FigureCanvasAgg(fig)
+        response = HttpResponse(content_type='image/png')
+        canvas.print_png(response)
+        return response
     
 
 
@@ -355,18 +400,19 @@ def wms(request, dataset):
         if reqtype.lower() == 'getmap':
 
 
+            response = getMap(request, dataset)
             # from sciwms.apps.wms.wms_handler import get_style_list
-            import sciwms.apps.wms.wms_handler as wms
-            logger.info("style_list = {0}".format(wms.get_style_list(request)))
+            # import sciwms.apps.wms.wms_handler as wms
+            # logger.info("style_list = {0}".format(wms.get_style_list(request)))
             
-            request = database_request_interaction(request, dataset)            
+            # request = database_request_interaction(request, dataset)            
 
-            handler = wms.wms_handler(request)
-            action_request = handler.make_action_request(request)
-            if action_request is not None:
-                response = getMap(action_request, dataset)
-            else:
-                response = HttpResponse()
+            # handler = wms.wms_handler(request)
+            # action_request = handler.make_action_request(request)
+            # if action_request is not None:
+            #     response = getMap(action_request, dataset)
+            # else:
+            #     response = HttpResponse()
         elif reqtype.lower() == 'getfeatureinfo':
             response = getFeatureInfo(request, dataset)
         elif reqtype.lower() == 'getlegendgraphic':
@@ -1298,210 +1344,72 @@ def getMap(request, dataset):
     '''
     the meat and bones of getMap
     '''
-    from sciwms.apps.wms.getMapUtils import blank_response
+    try:
+        from sciwms.apps.wms import wms_handler
+        from sciwms.apps.wms.getMapUtils import blank_response
+    except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        logger.info("getMap import error: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+
     response = HttpResponse(content_type='image/png')
-# ----------------------------------------------
-# some shared methods used many places in getMap
-    # def blank_response(width, height, dpi=5):
-    #     """
-    #     return a transparent (blank) response
-    #     used for tiles with no intersection with the current view or for some other error.
-    #     """
-    #     fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-    #     fig.set_alpha(0)
-    #     ax = fig.add_axes([0, 0, 1, 1])
-    #     #I don't know why height and width is divided by dpi,
-    #     #this is left over from old sciwms code
-    #     #maybe response needs to be in units of inches?
-    #     fig.set_figheight(height/dpi)
-    #     fig.set_figwidth(width/dpi)
-    #     ax.set_frame_on(False)
-    #     ax.set_clip_on(False)
-    #     ax.set_position([0, 0, 1, 1])
-    #     canvas = FigureCanvasAgg(fig)
-    #     response = HttpResponse(content_type='image/png')
-    #     canvas.print_png(response)
-    #     return response
 
-# ----------------------------------------------
-
-
-    #totaltimer = timeobj.time()
-    #loglist = []
+    logger.debug("getMap request.GET = {0}".format(request.GET))
+    logger.debug("dataset = {0}".format(dataset))
 
     # direct the service to the dataset
     url = Dataset.objects.get(name=dataset).path()
 
-    # Get the size of image requested and the geographic extent in webmerc
-    width = float(request.GET["width"])
-    height = float(request.GET["height"])
-    latmax = float(request.GET["latmax"])
-    latmin = float(request.GET["latmin"])
-    lonmax = float(request.GET["lonmax"])
-    lonmin = float(request.GET["lonmin"])
-
-    # Get time extents, elevation index(layer), and styles(actions)
-    datestart = request.GET["datestart"]
-    dateend = request.GET["dateend"]
-
+    datestart, dateend = wms_handler.get_date_start_end(request)
+    
+    logger.debug("datestart = {0}, dateend = {1}".format(datestart, dateend))
     # BM: buyer beware, this is actually WMS 'ELEVATION', AKA z coordinate, NOT WMS 'LAYERS'
     # TODO: find closest vertical index, for now, just zero
     layer = [0]
-    '''
-    layer = request.GET["layer"]
-    layer = layer.split(",")
-    for i, l in enumerate(layer):
-    #    layer[i] = int(l)-1
-        layer = int(l)
-    layer = numpy.asarray(layer)
-    '''
-
-    actions = request.GET["actions"]
-    actions = set(actions.split(","))
-
-    for k,v in request.GET.iteritems():
-        logger.debug("request.GET[{0}] = {1}".format(k,v))
 
     # Get the colormap requested, the color limits/scaling
-    colormap = request.GET["colormap"]
-    if request.GET["climits"][0] != "None":
-        climits = [float(lim) for lim in request.GET["climits"]]
-    else:
-        climits = ["None", "None"]
+    # colormap = request.GET["colormap"]
+    # if request.GET["climits"][0] != "None":
+    #     climits = [float(lim) for lim in request.GET["climits"]]
+    # else:
+    #     climits = ["None", "None"]
 
     # Get the absolute magnitude bool, the topological location of variable of
     # interest, and the variables of interest (comma sep, no spaces, limit 2)
-    magnitude = request.GET["magnitude"]
-    topology_type = request.GET["topologytype"]
-    variables = request.GET["variables"].split(",") # NOTE: this 'variables' is actually WMS LAYERS, see wms_handler
-    continuous = False
+    # magnitude = request.GET["magnitude"]
+    # topology_type = request.GET["topologytype"]
+    # variables = request.GET["variables"].split(",") # NOTE: this 'variables' is actually WMS LAYERS, see wms_handler
+    
+    # continuous = False
+
+    variables = request.GET["LAYERS"].split(",")# NOTE: this 'variables' is actually WMS LAYERS, see wms_handler
+
+    #THIS IS IN PROJECTED COORDINATES DON'T CALL lat/lon ITS DAMN CONFUSING.
+    xmin, ymin, xmax, ymax = wms_handler.get_bbox(request)
+    
+    # lonmin, latmin, lonmax, latmax = wms_handler.get_bbox(request)
+    logger.debug("bbox in projection crs = {0}".format([xmin, ymin, xmax, ymax]))
+
+    width, height = wms_handler.get_width_height(request)
+    logger.debug("width = {0}, height = {1}".format(width,height))
 
     # Get the box coordinates from webmercator to proper lat/lon for grid subsetting
-    mi = pyproj.Proj("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs ")
-    lonmin, latmin = mi(lonmin, latmin, inverse=True)
-    lonmax, latmax = mi(lonmax, latmax, inverse=True)
-    logger.debug("getMap Subset Bounding Box: {0}, {1}, {2}, {3}".format(lonmin,latmin,lonmax,latmax))
+    # mi = pyproj.Proj("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs ")
+
+    #CAN PROBABLY GET RID OF THIS JUST KEEPING FOR NOW FOR BACKWARDS COMPAT.
+    #PROJECTS FROM PROJECTED COORDINATES TO LAT/LON
+    from sciwms.util import get_pyproj
+    proj = get_pyproj(request)
+
+    lonmin, latmin = proj(xmin, ymin, inverse=True)
+    lonmax, latmax = proj(xmax, ymax, inverse=True)
+    logger.debug("lat/lon bbox: {0}, {1}, {2}, {3}".format(lonmin,latmin,lonmax,latmax))
 
     try:
-        from .getMapUtils import get_lat_lon_subset_idx, get_nv_subset_idx, get_nearest_start_time
-
-        def tricontourf_response(triang_subset,
-                                 data,
-                                 lonmin,
-                                 latmin,
-                                 lonmax,
-                                 latmax,
-                                 width,
-                                 height,
-                                 dpi=80.0,
-                                 nlvls = 15):
-            
-            logger.info("tricontourf: [lonmin = {0},latmin = {1}, lonmax = {2}, latmax = {3}]".format(lonmin,latmin,lonmax,latmax))
-            projection = request.GET["projection"]
-            logger.info("projection={0}".format(projection))
-
-            from sciwms.util import get_pyproj
-            proj = get_pyproj(request)
-            # if projection == 'merc':
-            #     proj = mi #alex's default mercator projection object
-            # else:
-            #     logger.error("Unsupported Projction: {0}".format(proj))
-            #     return blank_response(width,height)
-            
-            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-            fig.set_alpha(0)
-            fig.set_figheight(height/dpi)
-            fig.set_figwidth(width/dpi)
-
-            ax = fig.add_axes([0., 0., 1., 1.], xticks=[], yticks=[])
-            ax.set_axis_off()
-
-            lvls = np.linspace(data.min(), data.max(), nlvls)
-
-            logger.info("Computing mercator projection.")
-            triang_subset.x, triang_subset.y = proj(triang_subset.x, triang_subset.y)
-            logger.info("Done computing mercator projection.")
-            logger.info("triang_subset.x.shape = {0}".format(triang_subset.x.shape))
-            logger.info("triang_subset.y.shape = {0}".format(triang_subset.y.shape))
-            logger.info("triang_subset.x[:10] = {0}".format(triang_subset.x[:10]))
-
-            ax.tricontourf(triang_subset, data, levels=lvls)
-
-            merclatmax = float(request.GET["latmax"])
-            merclatmin = float(request.GET["latmin"])
-            merclonmax = float(request.GET["lonmax"])
-            merclonmin = float(request.GET["lonmin"])
-
-            logger.info("request_llcrnr = {0}".format((merclonmin,merclatmin)))
-            logger.info("request_upcrnr = {0}".format((merclonmax,merclatmax)))
-                        
-            ax.set_xlim(merclonmin, merclonmax)
-            ax.set_ylim(merclatmin, merclatmax)
-
-            ax.set_frame_on(False)
-            ax.set_clip_on(False)
-            ax.set_position([0, 0, 1, 1])
-            
-            plt.axis('off')
-
-            canvas = FigureCanvasAgg(fig)
-            response = HttpResponse(content_type='image/png')
-            canvas.print_png(response)
-            return response
-
-        def ugrid_quiver_response(lon, lat, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80):
-            logger.debug("Rendering ugrid quiver response.")
-            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-            fig.set_alpha(0)
-            fig.set_figheight(height/dpi)
-            fig.set_figwidth(width/dpi)
-            
-            ax = fig.add_axes([0., 0., 1., 1.], xticks=[], yticks=[])
-            ax.set_axis_off()
-            
-            projection = request.GET["projection"]
-            if projection == 'merc':
-                proj = mi #alex's default mercator projection object
-                logger.debug("Using default mercator projection.")
-            else:
-                logger.error("Unsupported Projction: {0}".format(proj))
-                canvas = blank_response(width,height)
-                canvas.print_png(response)
-                return response
-            
-            
-            ax =  fig.add_axes([0,0,1,1],xticks=[],yticks=[])
-            
-            logger.debug("Computing mercator projection.")
-            triang_subset.x, triang_subset.y = proj(triang_subset.x, triang_subset.y)
-            logger.debug("Done computing mercator projection.")
-            
-            #plot unit vectors
-            mags = np.sqrt(dx**2 + dy**2)
-
-            ax.quiver(triang_subset.x, triang_subset.y, dx/mags, dy/mags, mags)
-
-            merclatmax = float(request.GET["latmax"])
-            merclatmin = float(request.GET["latmin"])
-            merclonmax = float(request.GET["lonmax"])
-            merclonmin = float(request.GET["lonmin"])
-
-            ax.set_xlim(merclonmin, merclonmax)
-            ax.set_ylim(merclatmin, merclatmax)
-            ax.set_frame_on(False)
-            ax.set_clip_on(False)
-            ax.set_position([0, 0, 1, 1])
-            
-            canvas = FigureCanvasAgg(fig)
-            response = HttpResponse(content_type='image/png')
-            canvas.print_png(response)
-            return response
-
-        # actual try block starts here (def methods only above)
+        from matplotlib_handler import get_lat_lon_subset_idx, get_nv_subset_idx, get_nearest_start_time
         import matplotlib.tri as Tri
-
-        topology_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc')
+        
         logger.info("Trying to load pyugrid cache {0}".format(dataset))
+        topology_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc')
         ug = pyugrid.UGrid.from_ncfile(topology_path)
         logger.info("Loaded pyugrid cache")    
 
@@ -1531,7 +1439,6 @@ def getMap(request, dataset):
         datasetnc = netCDF4.Dataset(url,'r')
         time = get_nearest_start_time(datasetnc, datestart)
 
-        
         logger.info("time = {0}".format(time))
         
         # some short names for indexes
@@ -1588,7 +1495,17 @@ def getMap(request, dataset):
                 return response
             
             logger.info("getMap finished retrieving variable {0}, serving tricontourf response".format(variables)) # TODO this logger statement (variables is list?)
-            response = tricontourf_response(triang_subset, data, lonmin, latmin, lonmax, latmax, width, height)
+            import matplotlib_handler
+            # canvas = matplotlib_handler.tricontourf_canvas(topology, datasetnc, request)
+            try:
+                from . matplotlib_handler import tricontourf_response
+                # response = tricontourf_response(triang_subset, data, xmin, ymin, xmax, ymax, width, height, request)
+                response = tricontourf_response(triang_subset, data, request)
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                logger.info("getMap import error: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+            # canvas.print_png(response)
+            return response
 
         # vector
         elif len(variables) == 2:
@@ -1656,10 +1573,16 @@ def getMap(request, dataset):
             logger.info("len(data) = {0}".format(len(data)))
             logger.info("data[0].shape = {0}".format(data[0].shape))
             logger.info("data[1].shape = {0}".format(data[1].shape))
-            response = ugrid_quiver_response(
-                lon[sub_idx], lat[sub_idx], data[0][sub_idx], data[1][sub_idx],
-                lonmin, latmin, lonmax, latmax, width, height)
+            from . matplotlib_handler import ugrid_quiver_response
+            logger.debug("np.max(data[0]) = {0}".format(np.max(data[0])))
+            response = ugrid_quiver_response(lon[sub_idx],
+                                             lat[sub_idx],
+                                             data[0][sub_idx],
+                                             data[1][sub_idx],
+                                             request)
 
+            return response
+                
         else:
             #don't know how to handle more than 2 variables
             logger.info("Cannot handle more than 2 variables per request.")
