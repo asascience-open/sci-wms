@@ -398,21 +398,7 @@ def wms(request, dataset):
         request = lower_request(request)
         reqtype = request.GET['request']
         if reqtype.lower() == 'getmap':
-
-
             response = getMap(request, dataset)
-            # from sciwms.apps.wms.wms_handler import get_style_list
-            # import sciwms.apps.wms.wms_handler as wms
-            # logger.info("style_list = {0}".format(wms.get_style_list(request)))
-            
-            # request = database_request_interaction(request, dataset)            
-
-            # handler = wms.wms_handler(request)
-            # action_request = handler.make_action_request(request)
-            # if action_request is not None:
-            #     response = getMap(action_request, dataset)
-            # else:
-            #     response = HttpResponse()
         elif reqtype.lower() == 'getfeatureinfo':
             response = getFeatureInfo(request, dataset)
         elif reqtype.lower() == 'getlegendgraphic':

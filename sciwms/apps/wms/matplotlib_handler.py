@@ -98,6 +98,7 @@ def tricontourf_canvas(triang_subset,
                        dpi=80.0,
                        nlvls = 15):
     pass
+
 def tricontourf_canvas(topology, datasetnc, request):
     """
     topology - netcdf topology object
