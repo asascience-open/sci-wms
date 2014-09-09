@@ -42,6 +42,8 @@ try:
 except:
     import Pickle as pickle
 
+from rtree import index as rindex
+
 from django.conf import settings
 
 import gc
@@ -64,6 +66,7 @@ def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
         #try to load ugrid
         ug = pyugrid.UGrid.from_ncfile(url)
 
+        
         logger.info("Identified as UGrid---Using pyugrid to cache")
         
         #create the local cache temp file
@@ -73,16 +76,24 @@ def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
         #move local cache temp to final destination(overwrite existing)
         shutil.move(nclocalpath, nclocalpath.replace(".updating", ""))
 
+        logger.info("Building Rtree Index Cache")
+        #rtree index cache, is there a way to speed this up?
+        ridx = rindex.Index(os.path.join(settings.TOPOLOGY_PATH, dataset_name))
+        for face_idx, node_index_list in enumerate(ug.faces):
+            nodes = ug.nodes[node_index_list]
+            xmin, ymin = np.min(nodes, 0)
+            xmax, ymax = np.max(nodes, 0)
+            ridx.insert(face_idx, (xmin,ymin,xmax,ymax), node_index_list)
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         logger.info("Cannot open with pyugrid: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         logger.info("Trying old sciwms method")
-        create_topology_old(dataset_name, url, lat_var='lat', lon_var = 'lon')
+        create_topology_cgrid(dataset_name, url, lat_var='lat', lon_var = 'lon')
     finally:
         #release unreferenced memory
         gc.collect()
         
-def create_topology_old(dataset_name, url, lat_var='lat', lon_var='lon'):
+def create_topology_cgrid(dataset_name, url, lat_var='lat', lon_var='lon'):
     try:
         #with s1:
         nclocalpath = os.path.join(settings.TOPOLOGY_PATH, dataset_name+".nc.updating")
