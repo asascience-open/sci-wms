@@ -68,7 +68,7 @@ def get_nearest_start_time(nc,datestart):
 
     return time
 
-def blank_response(width, height, dpi=5):
+def blank_canvas(width, height, dpi=5):
     """
     return a transparent (blank) response
     used for tiles with no intersection with the current view or for some other error.
@@ -76,9 +76,6 @@ def blank_response(width, height, dpi=5):
     fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
     fig.set_alpha(0)
     ax = fig.add_axes([0, 0, 1, 1])
-    #I don't know why height and width is divided by dpi,
-    #this is left over from old sciwms code
-    #maybe response needs to be in units of inches?
     fig.set_figheight(height/dpi)
     fig.set_figwidth(width/dpi)
     ax.set_frame_on(False)
