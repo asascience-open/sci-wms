@@ -24,6 +24,8 @@ from sciwms.util.cf import get_by_standard_name, nc_name_from_standard, get_glob
 import json
 import numpy as np
 
+import pyugrid
+
 output_path = os.path.join(settings.PROJECT_ROOT, 'logs', 'sciwms_wms.log')
 logger = multiprocessing.get_logger()
 logger.setLevel(logging.DEBUG)
@@ -158,99 +160,6 @@ def get_layers(nc, vars=['depth','u,v']):
 
     return layers
 
-    '''
-    if 'hypoxia' in nc_id.lower():
-        print "Retrieving Hypoxia Layers"
-        logger.info("Retrieving Hypoxia layers")
-        
-        standard_names_styles =\
-            {'sea_walter_salinity':default_scalar_plot,
-             'sea_water_temperature':default_scalar_plot}
-
-        nc_names_styles = {}
-        for sname, style in standard_names_styles.iteritems():
-            ncname = nc_name_from_standard(nc,sname)
-            if ncname:
-                nc_names_styles[ncname] = style
-                layers[ncname] = style
-
-        return layers
-
-    elif nc_model.lower() == 'fcvom':
-        
-        if 'hs' in nc.variables:
-            layers['hs'] = default_scalar_plot
-
-        standard_names_styles =\
-          {'northward_sea_water_velocity'}
-            
-        logger.info("Retrieving FVCOM layers")
-    elif nc_model.lower() == 'selfe':
-        logger.info("Retrieving SELFE layers")
-    elif nc_model.lower() == 'adcirc':
-        logger.info("Retrieving ADCIRC layers")
-    elif nc_model.lower() == 'slosh':
-        logger.info("Retrieving SLOSH layers")
-    else:
-        logger.info("Unknown dataset type: cannot retrieve layers")
-    
-    
-    # #MISC
-    # if 'u' and 'v' in nc.variables:
-    #     layers['u,v'] = default_vector_plot
-
-    # if 'u-vel' and 'v-vel' in nc.variables:
-    #     layers['u-vel,v-vel'] = default_vector_plot
-
-    # if 'temp' in nc.variables:
-    #     layers['temp'] = default_scalar_plot
-
-    # if 'zeta' in nc.variables:
-    #     layers['zeta'] = default_scalar_plot
-
-    # if 'zeta_max' in nc.variables:
-    #     layers['zeta_max'] = default_scalar_plot
-
-    # #SLOSH Variables
-    # # if 'depth' in nc.variables:
-    # #     #IN BOTH SLOSH AND SELFE
-    # #     layers['depth'] = default_scalar_plot
-
-    # if 'etamax' in nc.variables:
-    #     layers['etamax'] = default_scalar_plot    
-
-    # # if 'eta_max' in nc.variables:
-    # #     layers['eta_max'] = default_scalar_plot
-
-    # #ADCIRC Variables
-    # if 'zeta_max' in nc.variables:
-    #     layers['zeta_max'] = default_scalar_plot
-
-    # if 'radstress_max' in nc.variables:
-    #     layers['radstress_max'] = default_scalar_plot
-
-    # if 'vel_max' in nc.variables:
-    #     layers['vel_max'] = default_scalar_plot
-
-    # if 'wind_max' in nc.variables:
-    #     layers['wind_max'] = default_scalar_plot
-
-    # if 'swan_DIR_max' in nc.variables:
-    #     layers['swan_DIR_max'] = default_scalar_plot
-
-    # if 'swan_TPS_max' in nc.variables:
-    #     layers['swan_TPS_max'] = default_scalar_plot
-
-    # #FVCOM
-    # if 'maxele' in nc.variables:
-    #     layers['maxele'] = default_scalar_plot
-
-    # if 'h' in nc.variables:
-    #     layers['h'] = default_scalar_plot
-
-    # return layers
-    '''
-
 def main():
     reqcnt = 0
     while reqcnt < 2:
@@ -292,13 +201,24 @@ def main():
             dataset = dbDataset.objects.get(name=legal_name)
             logger.debug("Found db entry for {0}".format(legal_name))
         except:
+            topology_type=""
+            try:
+                
+                ug = pyugrid.UGrid.from_ncfile(urls[legal_name])
+                logger.info("Identified {0} as ugrid".format(legal_name))
+                topology_type="ugrid"
+            except:
+                logger.info("Identified {0} as cgrid".format(legal_name))
+                topology_type="cgrid"
+                
             dataset = dbDataset.objects.create(
                 name=legal_name,
                 title=name,
                 abstract = "",
                 keep_up_to_date=True,
                 uri=urls[legal_name],
-                display_all_timesteps = True)
+                display_all_timesteps = True,
+                topology_type=topology_type)
             logger.debug("Creating db entry for {0}".format(legal_name))
 
         try:
