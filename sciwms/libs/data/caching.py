@@ -22,31 +22,36 @@ Created on Sep 6, 2011
 
 !!!THIS IS NOT A SCRIPT ANYMORE!!!
 '''
-from dateutil.parser import parse
-from netCDF4 import Dataset as ncDataset
-from netCDF4 import date2num
+from collections import deque
 import sys
 import os
-import numpy
 import logging
 import traceback
 from datetime import datetime
-import numpy as np
-from sciwms.apps.wms.models import Dataset
-from sciwms.libs.data import build_tree
+from dateutil.parser import parse
+import glob
 import multiprocessing
-from collections import deque
+import gc
 import shutil
+import time
+
 try:
     import cPickle as pickle
 except:
     import Pickle as pickle
 
+import numpy as np
+
+from netCDF4 import Dataset as ncDataset
+from netCDF4 import date2num
+
+from sciwms.apps.wms.models import Dataset
+from sciwms.libs.data import build_tree
+
 import rtree
 
 from django.conf import settings
 
-import gc
 import pyugrid
 
 output_path = os.path.join(settings.PROJECT_ROOT, 'logs', 'sciwms_wms.log')
@@ -67,7 +72,39 @@ class FastRtree(rtree.Rtree):
             return cPickle.dumps(obj,-1)
         except ImportError:
             super(FastRtree, self).dumps(obj)
+            
+def create_rtree_from_ug(ug, dataset_name):
+    logger.info("Building Rtree Topology Cache for {0}".format(dataset_name))
 
+    p = rtree.index.Property()
+    p.overwrite = True
+    # p.filename  = os.path.join(settings.TOPOLOGY_PATH, dataset_name)
+    p.storage   = rtree.index.RT_Disk
+    p.Dimension = 2
+
+    rtree_file = os.path.join(settings.TOPOLOGY_PATH, dataset_name + '.updating')
+    # rtree_tmp_file = rtree_file + 'update'
+    
+    def rtree_generator_function():
+            for face_idx, node_list in enumerate(ug.faces):
+                nodes = ug.nodes[node_list]
+                xmin, ymin = np.min(nodes,0)
+                xmax, ymax = np.max(nodes,0)
+                yield (face_idx, (xmin,ymin,xmax,ymax), node_list)
+
+    start = time.time()
+    ridx = FastRtree(rtree_file,
+                     rtree_generator_function(),
+                     properties=p,
+                     overwrite=True,
+                     interleaved=True)
+
+    logger.info("Built Rtree Topology Cache in {0} seconds.".format(time.time() - start))
+
+    shutil.move(rtree_file+".dat",(rtree_file+".dat").replace('.updating',''))
+    shutil.move(rtree_file+".idx",(rtree_file+".idx").replace('.updating',''))
+    
+    
 def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
     try:
         logger.info("Trying pyugrid")
@@ -83,26 +120,7 @@ def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
         #move local cache temp to final destination(overwrite existing)
         shutil.move(nclocalpath, nclocalpath.replace(".updating", ""))
 
-        logger.info("Building Rtree Index Cache")
-        #rtree index cache, is there a way to speed this up?
-        p = rtree.index.Property()
-        p.overwrite = True
-        p.filename  = os.path.join(settings.TOPOLOGY_PATH, dataset_name)
-        p.storage   = rtree.index.RT_Disk
-        p.Dimension = 2
-
-        def rtree_generator_function():
-            for face_idx, node_list in enumerate(ug.faces):
-                nodes = ug.nodes[node_list]
-                xmin, ymin = np.min(nodes,0)
-                xmax, ymax = np.max(nodes,0)
-                yield (face_idx, (xmin,ymin,xmax,ymax), node_list)
-        
-        ridx = FastRtree(p.filename,
-                         rtree_generator_function(),
-                         properties=p,
-                         overwrite=True,
-                         interleaved=True)
+        create_rtree_from_ug(ug, dataset_name)
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         logger.info("Cannot open with pyugrid: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
@@ -424,10 +442,10 @@ def create_domain_polygon(filename):
     lon = nc.variables['lonc'][:]
     lat = nc.variables['latc'][:]
     #print lat, lon, latn, lonn, nv
-    index_pos = numpy.asarray(numpy.where(
+    index_pos = np.asarray(np.where(
         (lat <= 90) & (lat >= -90) &
         (lon <= 180) & (lon > 0),)).squeeze()
-    index_neg = numpy.asarray(numpy.where(
+    index_neg = np.asarray(np.where(
         (lat <= 90) & (lat >= -90) &
         (lon < 0) & (lon >= -180),)).squeeze()
     #print np.max(np.max(nv)), np.shape(nv), np.shape(lonn), np.shape(latn)
