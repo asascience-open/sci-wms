@@ -204,7 +204,7 @@ def main():
             topology_type=""
             try:
                 
-                ug = pyugrid.UGrid.from_ncfile(urls[legal_name])
+                ug = pyugrid.UGrid.from_ncfile(urls[legal_name], load_data=False)
                 logger.info("Identified {0} as ugrid".format(legal_name))
                 topology_type="ugrid"
             except:

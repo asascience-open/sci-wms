@@ -155,7 +155,22 @@ def idx_comt2():
             dataset = dbDataset(name=name,abstract='',title=name,keep_up_to_date=True,display_all_timesteps=True)
             logger.info("Created new db entry for {0}".format(name))
 
+
+
         dataset.uri = pr_inundation[name]['url']
+
+        topology_type=""
+        try:
+            import pyugrid
+            ug = pyugrid.UGrid.from_ncfile(dataset.uri,load_data=False)
+            logger.info("Identified {0} as ugrid.".format(name))
+            topology_type = "ugrid"
+        except:
+            logger.info("Identified {0} as cgrid.".format(name))
+            topology_type = "cgrid"
+
+        dataset.topology_type=topology_type
+                
         dataset.json = js
             
         dataset.save()
@@ -179,6 +194,7 @@ def idx_comt2():
     for dataset in dbDataset.objects.all():
         if dataset.name != "json_all":
             jsall.append(dataset.json)
+            
     jsDataset.json=jsall
     jsDataset.save()
 
