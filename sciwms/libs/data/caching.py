@@ -68,14 +68,12 @@ class FastRtree(rtree.Rtree):
         except ImportError:
             super(FastRtree, self).dumps(obj)
 
-
 def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
     try:
         logger.info("Trying pyugrid")
         #try to load ugrid
         ug = pyugrid.UGrid.from_ncfile(url)
 
-        
         logger.info("Identified as UGrid---Using pyugrid to cache")
         
         #create the local cache temp file
@@ -105,12 +103,6 @@ def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
                          properties=p,
                          overwrite=True,
                          interleaved=True)
-        
-        # for face_idx, node_index_list in enumerate(ug.faces):
-        #     nodes = ug.nodes[node_index_list]
-        #     xmin, ymin = np.min(nodes, 0)
-        #     xmax, ymax = np.max(nodes, 0)
-        #     ridx.insert(face_idx, (xmin,ymin,xmax,ymax), node_index_list)
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         logger.info("Cannot open with pyugrid: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
