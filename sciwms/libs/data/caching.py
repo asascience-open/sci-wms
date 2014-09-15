@@ -42,7 +42,7 @@ try:
 except:
     import Pickle as pickle
 
-from rtree import index as rindex
+import rtree
 
 from django.conf import settings
 
@@ -59,6 +59,15 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 time_units = 'hours since 1970-01-01'
+
+class FastRtree(rtree.Rtree):
+    def dumps(self, obj):
+        try:
+            import cPickle
+            return cPickle.dumps(obj,-1)
+        except ImportError:
+            super(FastRtree, self).dumps(obj)
+
 
 def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
     try:
@@ -78,12 +87,30 @@ def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
 
         logger.info("Building Rtree Index Cache")
         #rtree index cache, is there a way to speed this up?
-        ridx = rindex.Index(os.path.join(settings.TOPOLOGY_PATH, dataset_name))
-        for face_idx, node_index_list in enumerate(ug.faces):
-            nodes = ug.nodes[node_index_list]
-            xmin, ymin = np.min(nodes, 0)
-            xmax, ymax = np.max(nodes, 0)
-            ridx.insert(face_idx, (xmin,ymin,xmax,ymax), node_index_list)
+        p = rtree.index.Property()
+        p.overwrite = True
+        p.filename  = os.path.join(settings.TOPOLOGY_PATH, dataset_name)
+        p.storage   = rtree.index.RT_Disk
+        p.Dimension = 2
+
+        def rtree_generator_function():
+            for face_idx, node_list in enumerate(ug.faces):
+                nodes = ug.nodes[node_list]
+                xmin, ymin = np.min(nodes,0)
+                xmax, ymax = np.max(nodes,0)
+                yield (face_idx, (xmin,ymin,xmax,ymax), node_list)
+        
+        ridx = FastRtree(p.filename,
+                         rtree_generator_function(),
+                         properties=p,
+                         overwrite=True,
+                         interleaved=True)
+        
+        # for face_idx, node_index_list in enumerate(ug.faces):
+        #     nodes = ug.nodes[node_index_list]
+        #     xmin, ymin = np.min(nodes, 0)
+        #     xmax, ymax = np.max(nodes, 0)
+        #     ridx.insert(face_idx, (xmin,ymin,xmax,ymax), node_index_list)
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         logger.info("Cannot open with pyugrid: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
