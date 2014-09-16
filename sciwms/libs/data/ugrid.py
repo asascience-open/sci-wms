@@ -35,12 +35,12 @@ class Ugrid(object):
         rtree_cache_file = os.path.join(settings.TOPOLOGY_PATH, self._name)
         self._rtree = FastRtree(rtree_cache_file)
 
-    # def face_subset_apprx(latmin, lonmin, latmax, lonmax):
-    #     """
-    #     This is an approximation, there may be triangles who's exterior bounding box intersect
-    #     the view.
-    #     """
-    #     return [n.object for n in self._rtree.intersection((latmin, lonmin, latmax, lonmax)), objects=True)]
+    def face_subset_apprx(latmin, lonmin, latmax, lonmax):
+        """
+        This is an approximation, there may be triangles who's exterior bounding box intersect
+        the view.
+        """
+        return [n.object for n in self._rtree.intersection((latmin, lonmin, latmax, lonmax), objects=True)]
 
 def subset(latmin, lonmin, latmax, lonmax, lat, lon):
     index = np.asarray(np.where(
