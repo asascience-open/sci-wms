@@ -201,25 +201,25 @@ def main():
             dataset = dbDataset.objects.get(name=legal_name)
             logger.debug("Found db entry for {0}".format(legal_name))
         except:
-            topology_type=""
-            try:
-                
-                ug = pyugrid.UGrid.from_ncfile(urls[legal_name], load_data=False)
-                logger.info("Identified {0} as ugrid".format(legal_name))
-                topology_type="ugrid"
-            except:
-                logger.info("Identified {0} as cgrid".format(legal_name))
-                topology_type="cgrid"
-                
             dataset = dbDataset.objects.create(
                 name=legal_name,
                 title=name,
                 abstract = "",
                 keep_up_to_date=True,
                 uri=urls[legal_name],
-                display_all_timesteps = True,
-                topology_type=topology_type)
+                display_all_timesteps = True)
             logger.debug("Creating db entry for {0}".format(legal_name))
+
+        topology_type=""
+        try:
+            ug = pyugrid.UGrid.from_ncfile(urls[legal_name], load_data=False)
+            logger.info("Identified {0} as ugrid".format(legal_name))
+            topology_type="ugrid"
+        except:
+            logger.info("Identified {0} as cgrid".format(legal_name))
+            topology_type="cgrid"
+
+        dataset.topology_type = topology_type
 
         try:
             nc = ncDataset(urls[legal_name],'r')
