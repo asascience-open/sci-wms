@@ -145,11 +145,16 @@ def colormaps(request):
     
         a = np.linspace(0,1,256).reshape(1,-1)
         a = np.vstack((a,a))
-        
+
+
         fig = plt.figure(dpi=100., facecolor='none', edgecolor='none')
         fig.set_alpha(0)
-        fig.set_figwidth(5)
-        fig.set_figheight(0.13)
+        
+        w = request.GET.get('w',5)
+        h = request.GET.get('h',0.13)
+        fig.set_figwidth(w)
+        fig.set_figheight(h)
+        
         ax = fig.add_axes([0.,0.,1.,1.], xticks=[], yticks=[])
         ax.set_axis_off();
         ax.imshow(a, aspect='auto',cmap=plt.get_cmap(colormap))
@@ -159,8 +164,6 @@ def colormaps(request):
         canvas.print_png(response)
         return response
     
-
-
 def grouptest(request, group):
     from django.template import Context
     sites = Site.objects.values()
