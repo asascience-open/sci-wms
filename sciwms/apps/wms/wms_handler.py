@@ -151,7 +151,7 @@ def get_elevation(request):
 def get_width_height(request):
     """
     Return width and height of requested view.
-    RETURNS width, height
+    RETURNS width, height request should be in pixel units.
     """
     try:
         width = float(request.GET.get("width"))

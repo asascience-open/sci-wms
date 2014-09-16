@@ -293,6 +293,7 @@ def add(request):
             memberof_groups = []
         else:
             memberof_groups = memberof_groups.split(",")
+            
         if dataset_id is None:
             return HttpResponse("Exception: Please include 'id' parameter in POST request.", status=500)
         elif dataset_endpoint is None:
@@ -301,6 +302,7 @@ def add(request):
             return HttpResponse("Exception: Please include 'abstract' parameter in POST request.", status=500)
         elif dataset_update is None:
             return HttpResponse("Exception: Please include 'update' parameter in POST request.", status=500)
+
         else:
             if len(list(Dataset.objects.filter(name=dataset_id))) > 0:
                 dataset = Dataset.objects.get(name = dataset_id)
