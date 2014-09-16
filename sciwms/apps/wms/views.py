@@ -149,11 +149,16 @@ def colormaps(request):
 
         fig = plt.figure(dpi=100., facecolor='none', edgecolor='none')
         fig.set_alpha(0)
+
+        #get request should be in units of pixels
+        w_pixels = float(request.GET.get('w',400.))
+        h_pixels = float(request.GET.get('h',10.4))
+        dpi = float(request.GET.get('dpi',80.))
+        w_inches = w_pixels/dpi
+        h_inches = h_pixels/dpi
         
-        w = request.GET.get('w',5)
-        h = request.GET.get('h',0.13)
-        fig.set_figwidth(w)
-        fig.set_figheight(h)
+        fig.set_figwidth(w_inches)
+        fig.set_figheight(h_inches)
         
         ax = fig.add_axes([0.,0.,1.,1.], xticks=[], yticks=[])
         ax.set_axis_off();
