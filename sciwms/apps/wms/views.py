@@ -383,7 +383,7 @@ def remove_from_group(request):
 
 
 def documentation(request):
-    return HttpResponseRedirect('http://acrosby.github.io/sci-wms')
+    return HttpResponseRedirect('http://asascience-open.github.io/sci-wms/')
 
 
 def lower_request(request):
