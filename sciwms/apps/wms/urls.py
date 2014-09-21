@@ -31,6 +31,8 @@ urlpatterns = patterns( '',
                         url(r'^datasets/$', 'sciwms.apps.wms.views.datasets'),
                         url(r'^datasets/(?P<dataset>.*)/update', 'sciwms.apps.wms.views.update_dataset', name="update_dataset"),
                         url(r'^datasets/(?P<dataset>.*)/', 'sciwms.apps.wms.views.wms', name="dataset"),
+                        
+                        url(r'^standard_names', 'sciwms.apps.wms.views.standard_names'),
 
                         # Colormaps
                         url(r'^colormaps', 'sciwms.apps.wms.views.colormaps'),

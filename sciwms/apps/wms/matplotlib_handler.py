@@ -185,6 +185,7 @@ def ugrid_quiver_response(lon,
                           dx,
                           dy,
                           request,
+                          unit_vectors=True,
                           dpi=80):
     logger.debug("Rendering ugrid quiver response.")
     from django.http import HttpResponse

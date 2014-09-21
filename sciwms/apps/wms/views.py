@@ -61,6 +61,7 @@ from django.contrib.sites.models import Site
 from django.template.loader import get_template
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import authenticate, login, logout
+from django.core.exceptions import ObjectDoesNotExist
 
 from sciwms.libs.data import cgrid, ugrid
 import sciwms.apps.wms.wms_requests as wms_reqs
@@ -119,6 +120,55 @@ def datasets(request):
         logger.info(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
     return HttpResponse(data, mimetype='application/json')
 
+def standard_names(request):
+    """
+    Return a json list of standard names for each variable available at a particular endpoint
+    EX 1 localhost:8080/wms/standard_names/dataset="the_name_of_a_dataset"
+    with optional callback for jsonp
+    EX 2 loaclhost:8080/wms/standard_names/dataset="the_name_of_a_dataset"&callback=callback
+    """
+
+    def get_snames_from_nc(nc):
+        snames = []
+        for v in nc.variables.itervalues():
+            sname = v.__dict__.get("standard_name")
+            if sname:
+                snames.append(sname)
+        return snames
+    
+    dataset_name = request.GET.get('dataset')
+    if dataset_name:
+        logger.debug("Requesting standard names for {0}".dataset)
+    else:
+        logger.debug("Requesting standard names for all datasets")
+
+    ret = None
+    if dataset_name:
+        try:
+            datasetdb = Dataset.objects.get(dataset_name)
+        except ObjectDoesNotExist:
+            logger.debug("Couldn't find dataset_name = {0}".format(dataset_name))
+            return HttpResponse(json.dumps(""),mimetype='application/json')
+
+        nc = netCDF4.Dataset(datasetdb.uri, 'r')
+        ret = get_snames_from_nc(nc)
+    else:
+        ret = {}
+        for datasetdb in Dataset.objects.all():
+            nc = netCDF4.Dataset(datasetdb.uri,'r')
+            snames = get_snames_from_nc(nc)
+            ret[datasetdb.name] = snames
+            
+
+    #jsonp
+    callback = request.GET.get('callback')
+    if callback:
+        ret = "{0}({1})".format(callback, ret)
+    else:
+        ret = json.dumps(ret)
+
+    return HttpResponse(ret, mimetype='application/json')
+        
 def colormaps(request):
     """
     Get either a json list of available matplotlib colormaps or return an image preview.
