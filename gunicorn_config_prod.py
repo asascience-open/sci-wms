@@ -39,7 +39,11 @@ except:
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sciwms.settings.prod")
 
+<<<<<<< Updated upstream
 bind = "0.0.0.0:8081"
+=======
+bind = "127.0.0.1:8080"
+>>>>>>> Stashed changes
 workers = multiprocessing.cpu_count() + 1
 worker_class = worker
 debug = False
