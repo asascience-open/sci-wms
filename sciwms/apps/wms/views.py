@@ -123,9 +123,9 @@ def datasets(request):
 def standard_names(request):
     """
     Return a json list of standard names for each variable available at a particular endpoint
-    EX 1 localhost:8080/wms/standard_names/dataset="the_name_of_a_dataset"
+    EX 1 localhost:8080/wms/standard_names/dataset=the_name_of_a_dataset
     with optional callback for jsonp
-    EX 2 loaclhost:8080/wms/standard_names/dataset="the_name_of_a_dataset"&callback=callback
+    EX 2 loaclhost:8080/wms/standard_names?dataset=the_name_of_a_dataset&callback=callback
     """
 
     def get_snames_from_nc(nc):
@@ -135,37 +135,39 @@ def standard_names(request):
             if sname:
                 snames.append(sname)
         return snames
+
     
     dataset_name = request.GET.get('dataset')
     if dataset_name:
-        logger.debug("Requesting standard names for {0}".dataset)
+        logger.debug("Requesting standard names for {0}".format(dataset_name))
     else:
         logger.debug("Requesting standard names for all datasets")
 
-    ret = None
+    ret = []
     if dataset_name:
         try:
-            datasetdb = Dataset.objects.get(dataset_name)
+            datasetdb = Dataset.objects.get(name=dataset_name)
+            if datasetdb.uri:
+                nc = netCDF4.Dataset(datasetdb.uri, 'r')
+                ret = get_snames_from_nc(nc)
+                
         except ObjectDoesNotExist:
             logger.debug("Couldn't find dataset_name = {0}".format(dataset_name))
-            return HttpResponse(json.dumps(""),mimetype='application/json')
 
-        nc = netCDF4.Dataset(datasetdb.uri, 'r')
-        ret = get_snames_from_nc(nc)
     else:
         ret = {}
         for datasetdb in Dataset.objects.all():
-            nc = netCDF4.Dataset(datasetdb.uri,'r')
-            snames = get_snames_from_nc(nc)
-            ret[datasetdb.name] = snames
+            if datasetdb.uri:
+                nc = netCDF4.Dataset(datasetdb.uri,'r')
+                snames = get_snames_from_nc(nc)
+                ret[datasetdb.name] = snames
             
-
+    ret = json.dumps(ret)
+    
     #jsonp
     callback = request.GET.get('callback')
     if callback:
         ret = "{0}({1})".format(callback, ret)
-    else:
-        ret = json.dumps(ret)
 
     return HttpResponse(ret, mimetype='application/json')
         
