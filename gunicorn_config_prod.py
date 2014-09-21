@@ -21,25 +21,33 @@ import os
 import sys
 import multiprocessing
 
-try:
-    import tornado
-    worker = "tornado"
-except:
+worker = "gevent"
+
+if worker is "gevent":
+    try:
+        #must import gevent monkey patching before threading library
+        #http://stackoverflow.com/questions/8774958/keyerror-in-module-threading-after-a-successful-py-test-run
+        import gevent.monkey; gevent.monkey.patch_thread()
+    except:
+        worker="sync"
+elif worker is "eventlet":
     try:
         import eventlet
-        worker = "eventlet"
     except:
-        try:
-            import gevent
-            worker = "gevent_wsgi"
-        except:
-            # Default to basic sync worker if other libs are
-            # not installed
-            worker = "sync"
+        worker="sync"
+elif worker is "tornado":
+    try:
+        pass
+    except:
+        worker="sync"
+else:
+    # default to basic sync worker if other libs are 
+    # not installed
+    worker="sync"
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sciwms.settings.prod")
 
-bind = "0.0.0.0:8081"
+bind = "127.0.0.1:8080"
 workers = multiprocessing.cpu_count() + 1
 worker_class = worker
 debug = False
