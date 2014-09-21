@@ -20,7 +20,7 @@ import pyugrid
 from . import wms_handler
 from .matplotlib_handler import blank_canvas
 from .models import Dataset as dbDataset
-from ...util import cf
+from ...util import cf, get_pyproj
 from ...libs.data.ugrid import Ugrid
 
 import rtree
@@ -82,7 +82,6 @@ def getMap(request, dataset):
 
     #CAN PROBABLY GET RID OF THIS JUST KEEPING FOR NOW FOR BACKWARDS COMPAT.
     #PROJECTS FROM PROJECTED COORDINATES TO LAT/LON
-    from sciwms.util import get_pyproj
     proj = get_pyproj(request)
 
     lonmin, latmin = proj(xmin, ymin, inverse=True)
@@ -426,31 +425,10 @@ def getMap(request, dataset):
             return blank_canvas(width, height);
 
         # TEMPORAL SUBSET
-        times = topology.variables['time'][:]
-        datestart = datetime.datetime.strptime(datestart, "%Y-%m-%dT%H:%M:%S" )  # datestr --> datetime obj
-        datestart = round(netCDF4.date2num(datestart, units=topology.variables['time'].units))  # datetime obj --> netcdf datenum
-        time = bisect.bisect_right(times, datestart) - 1
-        if settings.LOCALDATASET:
-            time = [1]
-        elif time == -1:
-            time = [0]
-        else:
-            time = [time]
-        if dateend != datestart:
-            dateend = datetime.datetime.strptime( dateend, "%Y-%m-%dT%H:%M:%S" )  # datestr --> datetime obj
-            dateend = round(netCDF4.date2num(dateend, units=topology.variables['time'].units))  # datetime obj --> netcdf datenum
-            time.append(bisect.bisect_right(times, dateend) - 1)
-            if settings.LOCALDATASET:
-                time[1] = 1
-            elif time[1] == -1:
-                time[1] = 0
-            else:
-                time[1] = time[1]
-            time = range(time[0], time[1]+1)
-
+        time = get_nearest_start_time(datasetnc, datestart)
 
         # some short names for indexes
-        t = time[0]  # TODO: ugh this is bad
+        # t = time[0]  # TODO: ugh this is bad
         z = layer[0]
 
         # scalar
