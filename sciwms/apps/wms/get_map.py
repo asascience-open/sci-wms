@@ -121,6 +121,7 @@ def getMap(request, dataset):
         logger.info("getMap Computing Triangulation Subset Complete.")
 
         datasetnc = netCDF4.Dataset(url,'r')
+        
         time = get_nearest_start_time(datasetnc, datestart)
         logger.info("time = {0}".format(time))
         
@@ -425,12 +426,27 @@ def getMap(request, dataset):
             return blank_canvas(width, height);
 
         # TEMPORAL SUBSET
-        time = get_nearest_start_time(datasetnc, datestart)
+        time = [0]
+        if request.GET.get('time'):
+            time = get_nearest_start_time(datasetnc, datestart)
+        else:
+            logger.info("No time specified in request.")
+            time = [0]
 
         # some short names for indexes
         # t = time[0]  # TODO: ugh this is bad
+        logger.info('asdf:time = {0}'.format(time))
+        t = None
+        if len(time) == 0:
+            t = time
+        else:
+            t = time[0]
+
+        logger.info('layer = {0}'.format(layer))
         z = layer[0]
 
+        logger.info('t = {0}'.format(t))
+        logger.info('dataset.variables[\'time\'].shape = {0}'.format(datasetnc.variables['time'].shape))
         # scalar
         if len(variables) == 1:
 
@@ -460,6 +476,7 @@ def getMap(request, dataset):
             logger.info("data_subset.shape = {0}".format(data_subset.shape))
 
             logger.info("getMap [non-UGRID] finished retrieving variable {0}, serving contourf response".format(variables)) # TODO this logger statement (variables is list?)
+            
             response = contourf_response(lon_subset, lat_subset, data_subset, lonmin, latmin, lonmax, latmax, width, height)
 
         # vector
