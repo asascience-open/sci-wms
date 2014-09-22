@@ -278,9 +278,9 @@ def contourf_response(lon,
     logger.debug("Projecting topology")
     xcrs, ycrs = proj(lon.flatten(),lat.flatten())
     logger.debug("Done projecting topology")
-    
-    xcrs.reshape(data.shape)
-    ycrs.reshape(data.shape)
+
+    xcrs = xcrs.reshape(data.shape)
+    ycrs = ycrs.reshape(data.shape)
 
     logger.debug("xcrs.shape = {0}".format(xcrs.shape))
     logger.debug("ycrs.shape = {0}".format(ycrs.shape))
@@ -291,12 +291,12 @@ def contourf_response(lon,
     fig.set_figheight(height/dpi)
     fig.set_figwidth(width/dpi)
 
-    ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
+    ax = fig.add_axes([0., 0., 1., 1.], xticks=[], yticks=[])
     lvls = np.linspace(cmin, cmax, nlvls)
 
     ax.contourf(xcrs, ycrs, data, levels=lvls, cmap=colormap)
 
-    ax.set_xlim(xmin, ymin)
+    ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
     ax.set_frame_on(False)
     ax.set_clip_on(False)
@@ -306,6 +306,8 @@ def contourf_response(lon,
     
     response = HttpResponse(content_type='image/png')
     canvas.print_png(response)
+
+    logger.debug("Finished Rendering c-grid contourf")
     
     return response
         

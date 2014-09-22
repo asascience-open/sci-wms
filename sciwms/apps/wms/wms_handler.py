@@ -22,6 +22,8 @@ Created on Oct 17, 2011
 '''
 import multiprocessing
 
+import numpy as np
+
 from datetime import date
 from django.conf import settings
 
@@ -133,7 +135,7 @@ def get_colormap(request):
 def get_climits(request):
     styles = get_style_list(request)
     if styles:
-        return styles[3:5]
+        return np.array(styles[3:5],dtype=np.float)
     else:
         return []
 

@@ -473,6 +473,6 @@ def getMap(request, dataset):
             exc_type, exc_value, exc_traceback = sys.exc_info()
             logger.info("[C-GRID ERROR]: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
 
-    gc.collect()
+    # gc.collect()
 
     return response
