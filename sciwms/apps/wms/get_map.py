@@ -199,7 +199,8 @@ def getMap(request, dataset):
             logger.info("variables = {0}".format(variables))
                 
             # variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), variables)
-            variable = {v : cf.get_by_standard_name(datasetnc, v) for v in variables}
+
+            variable = [cf.get_by_standard_name(datasetnc, v) for v in variables]
             logger.info("variable = {0}".format(variable))
 
             if None in variable:
@@ -255,6 +256,7 @@ def getMap(request, dataset):
             logger.info("data[1].shape = {0}".format(data[1].shape))
             from . matplotlib_handler import ugrid_quiver_response
             logger.debug("np.max(data[0]) = {0}".format(np.max(data[0])))
+            
             response = ugrid_quiver_response(lon[sub_idx],
                                              lat[sub_idx],
                                              data[0][sub_idx],
