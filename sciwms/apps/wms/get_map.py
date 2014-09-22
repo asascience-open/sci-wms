@@ -20,7 +20,7 @@ import pyugrid
 from . import wms_handler
 from .matplotlib_handler import blank_canvas
 from .models import Dataset as dbDataset
-from ...util import cf
+from ...util import cf, get_pyproj
 from ...libs.data.ugrid import Ugrid
 
 import rtree
@@ -82,7 +82,6 @@ def getMap(request, dataset):
 
     #CAN PROBABLY GET RID OF THIS JUST KEEPING FOR NOW FOR BACKWARDS COMPAT.
     #PROJECTS FROM PROJECTED COORDINATES TO LAT/LON
-    from sciwms.util import get_pyproj
     proj = get_pyproj(request)
 
     lonmin, latmin = proj(xmin, ymin, inverse=True)
@@ -122,6 +121,7 @@ def getMap(request, dataset):
         logger.info("getMap Computing Triangulation Subset Complete.")
 
         datasetnc = netCDF4.Dataset(url,'r')
+        
         time = get_nearest_start_time(datasetnc, datestart)
         logger.info("time = {0}".format(time))
         
@@ -426,33 +426,27 @@ def getMap(request, dataset):
             return blank_canvas(width, height);
 
         # TEMPORAL SUBSET
-        times = topology.variables['time'][:]
-        datestart = datetime.datetime.strptime(datestart, "%Y-%m-%dT%H:%M:%S" )  # datestr --> datetime obj
-        datestart = round(netCDF4.date2num(datestart, units=topology.variables['time'].units))  # datetime obj --> netcdf datenum
-        time = bisect.bisect_right(times, datestart) - 1
-        if settings.LOCALDATASET:
-            time = [1]
-        elif time == -1:
-            time = [0]
+        time = [0]
+        if request.GET.get('time'):
+            time = get_nearest_start_time(datasetnc, datestart)
         else:
-            time = [time]
-        if dateend != datestart:
-            dateend = datetime.datetime.strptime( dateend, "%Y-%m-%dT%H:%M:%S" )  # datestr --> datetime obj
-            dateend = round(netCDF4.date2num(dateend, units=topology.variables['time'].units))  # datetime obj --> netcdf datenum
-            time.append(bisect.bisect_right(times, dateend) - 1)
-            if settings.LOCALDATASET:
-                time[1] = 1
-            elif time[1] == -1:
-                time[1] = 0
-            else:
-                time[1] = time[1]
-            time = range(time[0], time[1]+1)
-
+            logger.info("No time specified in request.")
+            time = [0]
 
         # some short names for indexes
-        t = time[0]  # TODO: ugh this is bad
+        # t = time[0]  # TODO: ugh this is bad
+        logger.info('asdf:time = {0}'.format(time))
+        t = None
+        if len(time) == 0:
+            t = time
+        else:
+            t = time[0]
+
+        logger.info('layer = {0}'.format(layer))
         z = layer[0]
 
+        logger.info('t = {0}'.format(t))
+        logger.info('dataset.variables[\'time\'].shape = {0}'.format(datasetnc.variables['time'].shape))
         # scalar
         if len(variables) == 1:
 
@@ -482,6 +476,7 @@ def getMap(request, dataset):
             logger.info("data_subset.shape = {0}".format(data_subset.shape))
 
             logger.info("getMap [non-UGRID] finished retrieving variable {0}, serving contourf response".format(variables)) # TODO this logger statement (variables is list?)
+            
             response = contourf_response(lon_subset, lat_subset, data_subset, lonmin, latmin, lonmax, latmax, width, height)
 
         # vector

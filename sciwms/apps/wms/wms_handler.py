@@ -70,8 +70,8 @@ def get_elevation(request):
 
 def get_date_start_end(request):
     try:
-        time = requestobj.GET["time"]
-        if time == "":
+        time = requestobj.GET.get('time')
+        if not time:
             now = date.today().isoformat()
             time = now + "T00:00:00"#
     except:

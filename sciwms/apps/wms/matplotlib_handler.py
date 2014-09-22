@@ -46,12 +46,14 @@ def get_nearest_start_time(nc,datestart):
         datestart = datetime.datetime.strptime(datestart, "%Y-%m-%dT%H:%M:%S" )
 
         # datetime obj --> netcdf datenum
-        datestart = round(netCDF4.date2num(datestart, units=nc.variables['time'].units))  
-        logger.info("datestart = {0}".format(datestart))
+        cal = nc.variables['time'].__dict__.get('calendar','gregorian')
+        units = nc.variables['time'].__dict__.get('units')
+        datestart = round(netCDF4.date2num(datestart, units=units, calendar=cal))
 
         #bisect_right returns the index that would maintain sorted order if
         #the element (in this case datestart) was inserted to the right of an element
         time = bisect.bisect_right(times,datestart)
+        
 
         #goal is to find closest time index, or do we always use the "one before" or "one after"?            
         #This mod will get the nearest element by checking the one after vs. the one before
