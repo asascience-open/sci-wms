@@ -297,48 +297,6 @@ def getMap(request, dataset):
                 (lat <= (latmax + padding)) & (lat >= (latmin - padding)) &
                 (lon <= (lonmax + padding)) & (lon >= (lonmin - padding)),)).squeeze()
 
-
-
-        # def quiver_response(lon, lat, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80):
-        #     fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-        #     fig.set_alpha(0)
-        #     fig.set_figheight(height/dpi)
-        #     fig.set_figwidth(width/dpi)
-            
-        #     projection = request.GET["projection"]
-            
-        #     if projection == 'merc':
-        #         proj = mi #default mercator projection object
-        #         logger.debug("Using default mercator projection.")
-        #     else:
-        #         logger.error("Unsupported Projction: {0}".format(proj))
-        #         return blank_canvas(width,height)
-            
-        #     ax =  fig.add_axes([0,0,1,1],xticks=[],yticks=[])
-
-        #     logger.debug("Computing projected coordinates.")
-        #     projlon, projlat = proj(lon, lat)
-        #     logger.debug("Done computing projected coordinages.")
-        #     #plot unit vectors
-        #     mags = np.sqrt(dx**2 + dy**2)
-            
-        #     merclatmax = float(request.GET["latmax"])
-        #     merclatmin = float(request.GET["latmin"])
-        #     merclonmax = float(request.GET["lonmax"])
-        #     merclonmin = float(request.GET["lonmin"])
-            
-        #     ax.quiver(projlon, projlat, dx/mags, dy/mags, mags)
-        #     ax.set_xlim(merclonmin, merclonmax)
-        #     ax.set_ylim(merclatmin, merclatmax)
-        #     ax.set_frame_on(False)
-        #     ax.set_clip_on(False)
-        #     ax.set_position([0, 0, 1, 1])
-            
-        #     canvas = FigureCanvasAgg(fig)
-        #     response = HttpResponse(content_type='image/png')
-        #     canvas.print_png(response)
-        #     return response
-
         def getvar(v, t, z, idx):
             '''
             v: netCDF4.Variable object
@@ -429,26 +387,17 @@ def getMap(request, dataset):
             # vector
             elif len(variables) == 2:
 
-                logger.info("[non-UGRID] len(variables) == 2")
+                logger.info("[C-GRID] len(variables) == 2")
 
-                # get Variable using CF standard_name attribute (LIST)
-                # v = [cf.map.get(var, None) for var in variables]
-                # if None in v:
-                #     logger.warning('requested LAYERS {0}, no map exists to CF standard_name for at least one of these'.format(variables))
-                #     return blank_canvas(width, height) # was continue
+                variable = [cf.get_by_standard_name(datasetnc, v) for v in variables]
 
-                variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), variables)
-                if None in variable:
-                    logger.warning('requested LAYERS %s, standard_name %s does not exist in datasete' % (var,v['standard_name']))
-                    return blank_canvas(width, height) # was continue
 
-                logger.info("getMap retrieving variables {0}".format(variables))
-                logger.info("time = {0}".format(time))
 
                 # subset lon/lat and the data (should be the same size)
                 lon_subset = getvar(cf.get_by_standard_name(datasetnc, 'longitude'), t, z, sub_idx)
                 lat_subset = getvar(cf.get_by_standard_name(datasetnc, 'latitude'), t, z, sub_idx)
-
+                
+                logger.info("getMap retrieving variables {0}".format(variables))
                 u_subset = getvar(variable[0], t, z, sub_idx)
                 v_subset = getvar(variable[1], t, z, sub_idx)
 
