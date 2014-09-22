@@ -183,7 +183,7 @@ def colormaps(request):
     logger.debug("colormap = {0}".format(colormap))
     if not colormap:
         import matplotlib.pyplot as plt
-        ret = json.dumps([m for m in plt.cm.datad if not m.endswith("_r")])
+        ret = json.dumps([m.replace('_','-') for m in plt.cm.datad if not m.endswith("_r")])
         if 'callback' in request.REQUEST:
             ret = "{0}({1})".format(request.REQUEST['callback'], ret)
 
