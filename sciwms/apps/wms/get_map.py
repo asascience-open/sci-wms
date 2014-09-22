@@ -18,7 +18,7 @@ import pyproj
 import pyugrid
 
 from . import wms_handler
-from .matplotlib_handler import blank_canvas
+from .matplotlib_handler import blank_canvas, quiver_response, get_nearest_start_time
 from .models import Dataset as dbDataset
 from ...util import cf, get_pyproj
 from ...libs.data.ugrid import Ugrid
@@ -47,26 +47,29 @@ def getMap(request, dataset):
     logger.debug("datestart = {0}, dateend = {1}".format(datestart, dateend))
     # BM: buyer beware, this is actually WMS 'ELEVATION', AKA z coordinate, NOT WMS 'LAYERS'
     # TODO: find closest vertical index, for now, just zero
+
+    logger.info("HERE")
+    try:
+        time = get_nearest_start_time(datasetnc, datestart)
+    except:
+        time = 0
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        logger.info("Dataset doesn't contain temporal dimension: "
+                    + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+    logger.info("time = {0}".format(time))
+
+    logger.info("THERE")
+    t = time
     layer = [0]
+    # z = layer[0]
+    z = wms_handler.get_elevation(request)
 
-
-
-    # Get the colormap requested, the color limits/scaling
-    # colormap = request.GET["colormap"]
-    # if request.GET["climits"][0] != "None":
-    #     climits = [float(lim) for lim in request.GET["climits"]]
-    # else:
-    #     climits = ["None", "None"]
-
-    # Get the absolute magnitude bool, the topological location of variable of
-    # interest, and the variables of interest (comma sep, no spaces, limit 2)
-    # magnitude = request.GET["magnitude"]
-    # topology_type = request.GET["topologytype"]
-    # variables = request.GET["variables"].split(",") # NOTE: this 'variables' is actually WMS LAYERS, see wms_handler
+    logger.info("t = {0}, z = {1}".format(t,z))
     
-    # continuous = False
 
-    variables = request.GET["LAYERS"].split(",")# NOTE: this 'variables' is actually WMS LAYERS, see wms_handler
+    # variables = request.GET["LAYERS"].split(",")# NOTE: this 'variables' is actually WMS LAYERS, see wms_handler
+    variables = wms_handler.get_layers(request)
+    logger.info("variables = {0}".format(variables))
 
     #THIS IS IN PROJECTED COORDINATES DON'T CALL lat/lon ITS DAMN CONFUSING.
     xmin, ymin, xmax, ymax = wms_handler.get_bbox(request)
@@ -123,6 +126,7 @@ def getMap(request, dataset):
         datasetnc = netCDF4.Dataset(url,'r')
         
         time = get_nearest_start_time(datasetnc, datestart)
+            
         logger.info("time = {0}".format(time))
         
         # some short names for indexes
@@ -254,14 +258,14 @@ def getMap(request, dataset):
             logger.info("len(data) = {0}".format(len(data)))
             logger.info("data[0].shape = {0}".format(data[0].shape))
             logger.info("data[1].shape = {0}".format(data[1].shape))
-            from . matplotlib_handler import ugrid_quiver_response
+
             logger.debug("np.max(data[0]) = {0}".format(np.max(data[0])))
             
-            response = ugrid_quiver_response(lon[sub_idx],
-                                             lat[sub_idx],
-                                             data[0][sub_idx],
-                                             data[1][sub_idx],
-                                             request)
+            response = quiver_response(lon[sub_idx],
+                                       lat[sub_idx],
+                                       data[0][sub_idx],
+                                       data[1][sub_idx],
+                                       request)
 
             return response
                 
@@ -330,45 +334,45 @@ def getMap(request, dataset):
             canvas.print_png(response)
             return response
 
-        def quiver_response(lon, lat, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80):
-            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-            fig.set_alpha(0)
-            fig.set_figheight(height/dpi)
-            fig.set_figwidth(width/dpi)
+        # def quiver_response(lon, lat, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80):
+        #     fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
+        #     fig.set_alpha(0)
+        #     fig.set_figheight(height/dpi)
+        #     fig.set_figwidth(width/dpi)
             
-            projection = request.GET["projection"]
+        #     projection = request.GET["projection"]
             
-            if projection == 'merc':
-                proj = mi #default mercator projection object
-                logger.debug("Using default mercator projection.")
-            else:
-                logger.error("Unsupported Projction: {0}".format(proj))
-                return blank_canvas(width,height)
+        #     if projection == 'merc':
+        #         proj = mi #default mercator projection object
+        #         logger.debug("Using default mercator projection.")
+        #     else:
+        #         logger.error("Unsupported Projction: {0}".format(proj))
+        #         return blank_canvas(width,height)
             
-            ax =  fig.add_axes([0,0,1,1],xticks=[],yticks=[])
+        #     ax =  fig.add_axes([0,0,1,1],xticks=[],yticks=[])
 
-            logger.debug("Computing projected coordinates.")
-            projlon, projlat = proj(lon, lat)
-            logger.debug("Done computing projected coordinages.")
-            #plot unit vectors
-            mags = np.sqrt(dx**2 + dy**2)
+        #     logger.debug("Computing projected coordinates.")
+        #     projlon, projlat = proj(lon, lat)
+        #     logger.debug("Done computing projected coordinages.")
+        #     #plot unit vectors
+        #     mags = np.sqrt(dx**2 + dy**2)
             
-            merclatmax = float(request.GET["latmax"])
-            merclatmin = float(request.GET["latmin"])
-            merclonmax = float(request.GET["lonmax"])
-            merclonmin = float(request.GET["lonmin"])
+        #     merclatmax = float(request.GET["latmax"])
+        #     merclatmin = float(request.GET["latmin"])
+        #     merclonmax = float(request.GET["lonmax"])
+        #     merclonmin = float(request.GET["lonmin"])
             
-            ax.quiver(projlon, projlat, dx/mags, dy/mags, mags)
-            ax.set_xlim(merclonmin, merclonmax)
-            ax.set_ylim(merclatmin, merclatmax)
-            ax.set_frame_on(False)
-            ax.set_clip_on(False)
-            ax.set_position([0, 0, 1, 1])
+        #     ax.quiver(projlon, projlat, dx/mags, dy/mags, mags)
+        #     ax.set_xlim(merclonmin, merclonmax)
+        #     ax.set_ylim(merclatmin, merclatmax)
+        #     ax.set_frame_on(False)
+        #     ax.set_clip_on(False)
+        #     ax.set_position([0, 0, 1, 1])
             
-            canvas = FigureCanvasAgg(fig)
-            response = HttpResponse(content_type='image/png')
-            canvas.print_png(response)
-            return response
+        #     canvas = FigureCanvasAgg(fig)
+        #     response = HttpResponse(content_type='image/png')
+        #     canvas.print_png(response)
+        #     return response
 
         def getvar(v, t, z, idx):
             '''
@@ -432,8 +436,7 @@ def getMap(request, dataset):
             time = [0]
 
         # some short names for indexes
-        # t = time[0]  # TODO: ugh this is bad
-        logger.info('asdf:time = {0}'.format(time))
+        # TODO: ugh this is bad
         t = None
         if len(time) == 0:
             t = time
@@ -483,12 +486,12 @@ def getMap(request, dataset):
             logger.info("[non-UGRID] len(variables) == 2")
 
             # get Variable using CF standard_name attribute (LIST)
-            v = [cf.map.get(var, None) for var in variables]
-            if None in v:
-                logger.warning('requested LAYERS {0}, no map exists to CF standard_name for at least one of these'.format(variables))
-                return blank_canvas(width, height) # was continue
+            # v = [cf.map.get(var, None) for var in variables]
+            # if None in v:
+            #     logger.warning('requested LAYERS {0}, no map exists to CF standard_name for at least one of these'.format(variables))
+            #     return blank_canvas(width, height) # was continue
 
-            variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), v)
+            variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), variables)
             if None in variable:
                 logger.warning('requested LAYERS %s, standard_name %s does not exist in datasete' % (var,v['standard_name']))
                 return blank_canvas(width, height) # was continue
@@ -508,7 +511,11 @@ def getMap(request, dataset):
             logger.info("v_subset.shape = {0}".format(v_subset.shape))
 
             logger.info("getMap [non-UGRID] finished retrieving variable {0}, serving quiver response".format(variables)) # TODO this logger statement (variables is list?)
-            response = quiver_response(lon_subset, lat_subset, u_subset, v_subset, lonmin, latmin, lonmax, latmax, width, height)
+            response = quiver_response(lon_subset,
+                                       lat_subset,
+                                       u_subset,
+                                       v_subset,
+                                       request)
 
         # bad request, more than 2 vars (or none)
         else:

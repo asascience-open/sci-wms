@@ -7,6 +7,7 @@ import bisect
 import datetime
 import multiprocessing
 import sys
+import traceback
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -14,6 +15,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from . import wms_handler
+from ...util.cf import get_by_standard_name
 
 import numpy as np
 
@@ -41,13 +43,23 @@ def get_nv_subset_idx(nv, sub_idx):
 
 def get_nearest_start_time(nc,datestart):
     time = None
+    logger.debug("in get_nearest_time")
     try:
-        times = nc.variables['time'][:]
+        logger.debug('foo')
+        # times = nc.variables['time'][:]
+        time_obj = get_by_standard_name(nc,'time')
+        times = None
+        if time_obj:
+            times = time_obj[:]
+        else:
+            logger.debug("No times available.")
+            return 0
+    
         datestart = datetime.datetime.strptime(datestart, "%Y-%m-%dT%H:%M:%S" )
 
         # datetime obj --> netcdf datenum
-        cal = nc.variables['time'].__dict__.get('calendar','gregorian')
-        units = nc.variables['time'].__dict__.get('units')
+        cal = time_obj.__dict__.get('calendar','gregorian')
+        units = time_obj.__dict__.get('units')
         datestart = round(netCDF4.date2num(datestart, units=units, calendar=cal))
 
         #bisect_right returns the index that would maintain sorted order if
@@ -60,13 +72,14 @@ def get_nearest_start_time(nc,datestart):
         if time == len(times):
             time -= 1
         elif time != 0:
-            time = time if abs(times[time]-datestart) < abs(time[time-1]-datestart) else time-1
+            time = time if abs(times[time]-datestart) < abs(times[time-1]-datestart) else time-1
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        logger.info("Dataset doesn't contain temporal dimension: "
+        logger.info("ERROR: get_nearest_start_time:: "
                     + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
     finally:
         del times
+    
 
     return time
 
@@ -183,13 +196,14 @@ def tricontourf_response(triang_subset,
     canvas.print_png(response)
     return response
 
-def ugrid_quiver_response(lon,
-                          lat,
-                          dx,
-                          dy,
-                          request,
-                          unit_vectors=True,
-                          dpi=80):
+def quiver_response(lon,
+                    lat,
+                    dx,
+                    dy,
+                    request,
+                    unit_vectors=True,
+                    dpi=80):
+    
     logger.debug("Rendering ugrid quiver response.")
     from django.http import HttpResponse
     from sciwms.util import get_pyproj
@@ -215,11 +229,14 @@ def ugrid_quiver_response(lon,
     logger.debug("Done projecting ugrid lat/lon.")
 
     #plot unit vectors
-    mags = np.sqrt(dx**2 + dy**2)
-    logger.debug("mags.max() = {0}".format(mags.max()))
-    logger.debug("mags = {0}".format(mags[100:150]))
+    if unit_vectors:
+        mags = np.sqrt(dx**2 + dy**2)
+        logger.debug("mags.max() = {0}".format(mags.max()))
+        logger.debug("mags = {0}".format(mags[100:150]))
 
-    ax.quiver(x, y, dx/mags, dy/mags, mags,cmap=colormap)
+        ax.quiver(x, y, dx/mags, dy/mags, mags, cmap=colormap)
+    else:
+        ax.quiver(x, y, dx, dy, cmap=colormap)
 
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
