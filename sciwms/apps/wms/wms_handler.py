@@ -20,8 +20,11 @@ Created on Oct 17, 2011
 
 @author: ACrosby
 '''
-from datetime import date
 import multiprocessing
+
+from datetime import date
+from django.conf import settings
+
 logger = multiprocessing.get_logger()
 
 def get_bbox(request):
@@ -55,6 +58,12 @@ def get_projection_string(request):
 
     return projstr
 
+def get_layers(request):
+    """
+    Returns a list of strings
+    """
+    return request.GET.get("LAYERS").split(",")
+
 def get_elevation(request):
     """
     Return the elevation
@@ -69,14 +78,19 @@ def get_elevation(request):
     return elev
 
 def get_date_start_end(request):
-    try:
-        time = requestobj.GET.get('time')
-        if not time:
-            now = date.today().isoformat()
-            time = now + "T00:00:00"#
-    except:
-        now = date.today().isoformat()
-        time = now + "T00:00:00"#
+    time = request.GET.get('time')
+    if not time:
+        time = date.today().isoformat() + "T00:00:00"
+    logger.debug("get_date_start_end::time = {0}".format(time))
+    # try:
+    #     time = request.GET.get('time')
+    #     logger.debug("get_date_start_end::time = {0}".format(time))
+    #     if not time:
+    #         now = date.today().isoformat()
+    #         time = now + "T00:00:00"#
+    # except:
+    #     now = date.today().isoformat()
+    #     time = now + "T00:00:00"#
     time = time.split("/")
 
     for i in range(len(time)):
