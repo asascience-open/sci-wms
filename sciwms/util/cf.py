@@ -18,6 +18,9 @@ map = {
 }
 
 def get_by_standard_name(nc, standard_name):
+    """
+    returns netCDF variable object
+    """
     for vn, v in nc.variables.iteritems():
         # sn - standard_name
         sn = nc.variables[vn].__dict__.get('standard_name', None)

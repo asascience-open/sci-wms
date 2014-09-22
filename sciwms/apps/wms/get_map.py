@@ -145,18 +145,19 @@ def getMap(request, dataset):
 
             logger.info("len(variables) == 1")
 
-            var = variables[0] # because it comes in as list, just using var for consistency with getFeatureInfo
+            v = variables[0] # because it comes in as list, just using var for consistency with getFeatureInfo
             # get Variable using CF standard_name attribute
-            v = cf.map.get(var, None)
+            # v = cf.map.get(var, None)
             if v == None:
                 logger.warning('requested LAYERS %s, no map exists to CF standard_name' % var)
                 canvas = blank_canvas(width, height)
                 canvas.print_png(response)
                 return response
             
-            variable = cf.get_by_standard_name(datasetnc, v['standard_name'])
+            variable = cf.get_by_standard_name(datasetnc, v)
 
-            logger.info('getMap retrieving LAYER %s with standard_name %s' % (var, v['standard_name']))
+            # logger.info('getMap retrieving LAYER %s with standard_name %s' % (var, v['standard_name']))
+            logger.info('getMap retrieving Layer {0}'.format(v))
 
             #data_obj = datasetnc.variables[variables[0]]
             data_obj = variable
@@ -195,16 +196,11 @@ def getMap(request, dataset):
         elif len(variables) == 2:
 
             logger.info("len(variables) == 2")
-
-            # get Variable using CF standard_name attribute (LIST)
-            v = [cf.map.get(var, None) for var in variables]
-            if None in v:
-                logger.warning('requested LAYERS {0}, no map exists to CF standard_name for at least one of these'.format(variables))
-                canvas = blank_canvas(width,height)
-                canvas.print_png(response)
-                return response
+            logger.info("variables = {0}".format(variables))
                 
-            variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), v)
+            # variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), variables)
+            variable = {v : cf.get_by_standard_name(datasetnc, v) for v in variables}
+            logger.info("variable = {0}".format(variable))
 
             if None in variable:
                 logger.warning('variable not found for at least these'.format(variables))
