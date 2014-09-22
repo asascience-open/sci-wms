@@ -18,7 +18,7 @@ import pyproj
 import pyugrid
 
 from . import wms_handler
-from .matplotlib_handler import blank_canvas, quiver_response, get_nearest_start_time
+from .matplotlib_handler import blank_canvas, quiver_response, get_nearest_start_time, contourf_response
 from .models import Dataset as dbDataset
 from ...util import cf, get_pyproj
 from ...libs.data.ugrid import Ugrid
@@ -104,6 +104,7 @@ def getMap(request, dataset):
         #check that this is correct lat/lon NOTE: below we do this again IF UGRID.location = 'face'
         lon = ug.nodes[:,0]
         lat = ug.nodes[:,1]
+        
         sub_idx = get_lat_lon_subset_idx(lon,lat,lonmin,latmin,lonmax,latmax)
         nv  = ug.faces[:]
 
@@ -283,9 +284,8 @@ def getMap(request, dataset):
     except:
 
         # log reason we dropped to this OLD code section, indicates some exception from pyugrid, lets just record why
-        logger.debug("IN EXCEPT!!!")
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        logger.info("Something went wrong with pyugrid plot: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        logger.info("[IN C-GRID EXCEPT]: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
 
 #---------
         # lets get some support functions (probably copied verbatim from above and can be reduced to one) to index the target data
@@ -297,42 +297,7 @@ def getMap(request, dataset):
                 (lat <= (latmax + padding)) & (lat >= (latmin - padding)) &
                 (lon <= (lonmax + padding)) & (lon >= (lonmin - padding)),)).squeeze()
 
-        def contourf_response(lon_subset, lat_subset, data, lonmin, latmin, lonmax, latmax, width, height, dpi=80, nlvls = 15):
-            logger.info("Rendering c-grid countourf.")
-            fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
-            fig.set_alpha(0)
-            fig.set_figheight(height/dpi)
-            fig.set_figwidth(width/dpi)
-            projection = request.GET["projection"]
 
-            if projection == 'merc':
-                proj = mi #default mercator projection object
-            else:
-                logger.error("Unsupported Projection: {0}". format(proj))
-
-            logger.info("Computing mercator projection.")
-            lonmerc, latmerc = proj(lon_subset.flatten(), lat_subset.flatten())
-            logger.info("Done computing mercator projection.")
-            
-            ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
-            lvls = np.linspace(data.min(), data.max(), nlvls)
-            
-            ax.contourf(lonmerc.reshape(lon_subset.shape), latmerc.reshape(lat_subset.shape), data, levels=lvls)
-            
-            merclatmax = float(request.GET["latmax"])
-            merclatmin = float(request.GET["latmin"])
-            merclonmax = float(request.GET["lonmax"])
-            merclonmin = float(request.GET["lonmin"])
-            
-            ax.set_xlim(merclonmin, merclonmax)
-            ax.set_ylim(merclatmin, merclatmax)
-            ax.set_frame_on(False)
-            ax.set_clip_on(False)
-            ax.set_position([0, 0, 1, 1])
-            canvas = FigureCanvasAgg(fig)
-            response = HttpResponse(content_type='image/png')
-            canvas.print_png(response)
-            return response
 
         # def quiver_response(lon, lat, dx, dy, lonmin, latmin, lonmax, latmax, width, height, dpi=80):
         #     fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
@@ -403,125 +368,110 @@ def getMap(request, dataset):
             return v
 
 #----------
+        try:
+            # Open topology cache file, and the actualy data endpoint
+            topology = netCDF4.Dataset(os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc'))
+            datasetnc = netCDF4.Dataset(url, 'r')
+            gridtype = topology.grid  # Grid type found in topology file (False is UGRID)
+            logger.info("gridtype: " + gridtype)
 
-        # Open topology cache file, and the actualy data endpoint
-        topology = netCDF4.Dataset(os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc'))
-        datasetnc = netCDF4.Dataset(url, 'r')
-        gridtype = topology.grid  # Grid type found in topology file (False is UGRID)
-        logger.info("gridtype: " + gridtype)
 
+            # SPATIAL SUBSET
+            # load the lon and lat arrays
+            lon = topology.variables['lon'][:]
+            lat = topology.variables['lat'][:]
 
-        # SPATIAL SUBSET
-        # load the lon and lat arrays
-        lon = topology.variables['lon'][:]
-        lat = topology.variables['lat'][:]
+            # TODO: best way to subset this?
+            # get the subset (returns array of array [[i,i,...],[j,j,...]]
+            sub_idx = get_lat_lon_subset_idx(lon, lat, lonmin, latmin, lonmax, latmax)
+            # zip into a list of tuples (i,j)
+            #sub_idx = zip(*sub_idx)
 
-        # TODO: best way to subset this?
-        # get the subset (returns array of array [[i,i,...],[j,j,...]]
-        sub_idx = get_lat_lon_subset_idx(lon, lat, lonmin, latmin, lonmax, latmax)
-        # zip into a list of tuples (i,j)
-        #sub_idx = zip(*sub_idx)
+            #if no insersection with the field of view, return a transparent tile
+            if len(sub_idx) == 0:
+                logger.info("No intersection with in field of view, returning empty tile.")
+                return blank_canvas(width, height);
 
-        #if no insersection with the field of view, return a transparent tile
-        if len(sub_idx) == 0:
-            logger.info("No intersection with in field of view, returning empty tile.")
-            return blank_canvas(width, height);
+            logger.debug("[C-GRID] t = {0}, z = {0}".format(t,z))
 
-        # TEMPORAL SUBSET
-        time = [0]
-        if request.GET.get('time'):
-            time = get_nearest_start_time(datasetnc, datestart)
-        else:
-            logger.info("No time specified in request.")
-            time = [0]
+            # logger.info('dataset.variables[\'time\'].shape = {0}'.format(datasetnc.variables['time'].shape))
+            # scalar
+            if len(variables) == 1:
 
-        # some short names for indexes
-        # TODO: ugh this is bad
-        t = None
-        if len(time) == 0:
-            t = time
-        else:
-            t = time[0]
+                logger.info("[C-GRID] len(variables) == 1")
 
-        logger.info('layer = {0}'.format(layer))
-        z = layer[0]
+                #now only accepting cf-standard names
+                var = variables[0] # because it comes in as list, just using var for consistency with getFeatureInfo
+                variable = cf.get_by_standard_name(datasetnc, var)
 
-        logger.info('t = {0}'.format(t))
-        logger.info('dataset.variables[\'time\'].shape = {0}'.format(datasetnc.variables['time'].shape))
-        # scalar
-        if len(variables) == 1:
+                if variable is None:
+                    logger.warning('LAYERS {0} N/A'.format(var))
+                    return blank_canvas(width, height) # was continue
 
-            logger.info("[non-UGRID] len(variables) == 1")
+                logger.info('getMap retrieving LAYER {0}'.format(var))
 
-            var = variables[0] # because it comes in as list, just using var for consistency with getFeatureInfo
-            # get Variable using CF standard_name attribute
-            v = cf.map.get(var, None)
-            if v == None:
-                logger.warning('requested LAYERS %s, no map exists to CF standard_name' % var)
-                return blank_canvas(width, height) # was continue
-            variable = cf.get_by_standard_name(datasetnc, v['standard_name'])
+                # subset lon/lat and the data (should be the same size)
+                lon_subset = getvar(cf.get_by_standard_name(datasetnc, 'longitude'), t, z, sub_idx)
+                lat_subset = getvar(cf.get_by_standard_name(datasetnc, 'latitude'), t, z, sub_idx)
+                data_subset = getvar(variable, t, z, sub_idx)
 
-            if variable is None:
-                logger.warning('requested LAYERS %s, standard_name %s does not exist in datasete' % (var,v['standard_name']))
-                return blank_canvas(width, height) # was continue
+                logger.info("lon_subset.shape = {0}".format(lon_subset.shape))
+                logger.info("lat_subset.shape = {0}".format(lat_subset.shape))
+                logger.info("data_subset.shape = {0}".format(data_subset.shape))
 
-            logger.info('getMap retrieving LAYER %s with standard_name %s' % (var, v['standard_name']))
+                logger.info("getMap [non-UGRID] finished retrieving variable {0}, serving contourf response".format(variables)) # TODO this logger statement (variables is list?)
 
-            # subset lon/lat and the data (should be the same size)
-            lon_subset = getvar(cf.get_by_standard_name(datasetnc, 'longitude'), t, z, sub_idx)
-            lat_subset = getvar(cf.get_by_standard_name(datasetnc, 'latitude'), t, z, sub_idx)
-            data_subset = getvar(variable, t, z, sub_idx)
+                response = contourf_response(lon_subset,
+                                             lat_subset,
+                                             data_subset,
+                                             request)
 
-            logger.info("lon_subset.shape = {0}".format(lon_subset.shape))
-            logger.info("lat_subset.shape = {0}".format(lat_subset.shape))
-            logger.info("data_subset.shape = {0}".format(data_subset.shape))
+            # vector
+            elif len(variables) == 2:
 
-            logger.info("getMap [non-UGRID] finished retrieving variable {0}, serving contourf response".format(variables)) # TODO this logger statement (variables is list?)
-            
-            response = contourf_response(lon_subset, lat_subset, data_subset, lonmin, latmin, lonmax, latmax, width, height)
+                logger.info("[non-UGRID] len(variables) == 2")
 
-        # vector
-        elif len(variables) == 2:
+                # get Variable using CF standard_name attribute (LIST)
+                # v = [cf.map.get(var, None) for var in variables]
+                # if None in v:
+                #     logger.warning('requested LAYERS {0}, no map exists to CF standard_name for at least one of these'.format(variables))
+                #     return blank_canvas(width, height) # was continue
 
-            logger.info("[non-UGRID] len(variables) == 2")
+                variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), variables)
+                if None in variable:
+                    logger.warning('requested LAYERS %s, standard_name %s does not exist in datasete' % (var,v['standard_name']))
+                    return blank_canvas(width, height) # was continue
 
-            # get Variable using CF standard_name attribute (LIST)
-            # v = [cf.map.get(var, None) for var in variables]
-            # if None in v:
-            #     logger.warning('requested LAYERS {0}, no map exists to CF standard_name for at least one of these'.format(variables))
-            #     return blank_canvas(width, height) # was continue
+                logger.info("getMap retrieving variables {0}".format(variables))
+                logger.info("time = {0}".format(time))
 
-            variable = map(lambda x: cf.get_by_standard_name(datasetnc, x['standard_name']), variables)
-            if None in variable:
-                logger.warning('requested LAYERS %s, standard_name %s does not exist in datasete' % (var,v['standard_name']))
-                return blank_canvas(width, height) # was continue
+                # subset lon/lat and the data (should be the same size)
+                lon_subset = getvar(cf.get_by_standard_name(datasetnc, 'longitude'), t, z, sub_idx)
+                lat_subset = getvar(cf.get_by_standard_name(datasetnc, 'latitude'), t, z, sub_idx)
 
-            logger.info("getMap retrieving variables {0}".format(variables))
-            logger.info("time = {0}".format(time))
+                u_subset = getvar(variable[0], t, z, sub_idx)
+                v_subset = getvar(variable[1], t, z, sub_idx)
 
-            # subset lon/lat and the data (should be the same size)
-            lon_subset = getvar(cf.get_by_standard_name(datasetnc, 'longitude'), t, z, sub_idx)
-            lat_subset = getvar(cf.get_by_standard_name(datasetnc, 'latitude'), t, z, sub_idx)
-            u_subset = getvar(variable[0], t, z, sub_idx)
-            v_subset = getvar(variable[1], t, z, sub_idx)
-            
-            logger.info("lon_subset.shape = {0}".format(lon_subset.shape))
-            logger.info("lat_subset.shape = {0}".format(lat_subset.shape))
-            logger.info("u_subset.shape = {0}".format(u_subset.shape))
-            logger.info("v_subset.shape = {0}".format(v_subset.shape))
+                logger.info("lon_subset.shape = {0}".format(lon_subset.shape))
+                logger.info("lat_subset.shape = {0}".format(lat_subset.shape))
+                logger.info("u_subset.shape = {0}".format(u_subset.shape))
+                logger.info("v_subset.shape = {0}".format(v_subset.shape))
 
-            logger.info("getMap [non-UGRID] finished retrieving variable {0}, serving quiver response".format(variables)) # TODO this logger statement (variables is list?)
-            response = quiver_response(lon_subset,
-                                       lat_subset,
-                                       u_subset,
-                                       v_subset,
-                                       request)
+                logger.info("getMap [non-UGRID] finished retrieving variable {0}, serving quiver response".format(variables)) # TODO this logger statement (variables is list?)
+                response = quiver_response(lon_subset,
+                                           lat_subset,
+                                           u_subset,
+                                           v_subset,
+                                           request)
 
-        # bad request, more than 2 vars (or none)
-        else:
-            #don't know how to handle more than 2 variables
-            logger.info("Cannot handle more than 2 variables per request.")
-            return blank_canvas(width, height)
+            # bad request, more than 2 vars (or none)
+            else:
+                #don't know how to handle more than 2 variables
+                logger.info("Cannot handle more than 2 variables per request.")
+                return blank_canvas(width, height)
+        except:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            logger.info("[C-GRID ERROR]: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
 
     gc.collect()
 

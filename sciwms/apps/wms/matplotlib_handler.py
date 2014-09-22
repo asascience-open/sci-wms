@@ -14,8 +14,11 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
+from django.http import HttpResponse
+
 from . import wms_handler
 from ...util.cf import get_by_standard_name
+from ...util import get_pyproj
 
 import numpy as np
 
@@ -43,10 +46,7 @@ def get_nv_subset_idx(nv, sub_idx):
 
 def get_nearest_start_time(nc,datestart):
     time = None
-    logger.debug("in get_nearest_time")
     try:
-        logger.debug('foo')
-        # times = nc.variables['time'][:]
         time_obj = get_by_standard_name(nc,'time')
         times = None
         if time_obj:
@@ -252,36 +252,62 @@ def quiver_response(lon,
     return response
     
 
-def layered_quiver_response(lon, lat, dx, dy, sub_idx, triang_subset, lonmin, latmin, lonmax, latmax, width, height, dpi=80, nlvls=20):
-    logger.info("In layered_quiver_response")
+def contourf_response(lon,
+                      lat,
+                      data,
+                      request,
+                      dpi=80,
+                      nlvls = 15):
+
+    logger.info("Rendering c-grid countourf.")
+
+    xmin, ymin, xmax, ymax = wms_handler.get_bbox(request)
+    logger.debug("xmin, ymin, xmax, ymax = {0}".format([xmin, ymin, xmax, ymax]))
+
+    width, height = wms_handler.get_width_height(request)
+    logger.debug("width = {0}, height = {1}".format(width, height))
+
+    colormap = wms_handler.get_colormap(request)
+    logger.debug("colormap = {0}".format(colormap))
+
+    cmin, cmax = wms_handler.get_climits(request)
+    logger.debug("cmin = {0}, cmax = {1}".format(cmin, cmax))
+
+    proj = get_pyproj(request)
+
+    logger.debug("Projecting topology")
+    xcrs, ycrs = proj(lon.flatten(),lat.flatten())
+    logger.debug("Done projecting topology")
+    
+    xcrs.reshape(data.shape)
+    ycrs.reshape(data.shape)
+
+    logger.debug("xcrs.shape = {0}".format(xcrs.shape))
+    logger.debug("ycrs.shape = {0}".format(ycrs.shape))
+    logger.debug("data.shape = {0}".format(data.shape))
+
     fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
     fig.set_alpha(0)
     fig.set_figheight(height/dpi)
     fig.set_figwidth(width/dpi)
-    projection = request.GET["projection"]
-    m = Basemap(llcrnrlon=lonmin, llcrnrlat=latmin,
-                urcrnrlon=lonmax, urcrnrlat=latmax, projection=projection,
-                resolution=None,
-                lat_ts = 0.0,
-                suppress_ticks=True)
-    m.ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
 
-    mags = np.sqrt(dx**2 + dy**2)
-    lvls = np.linspace(mags.min(), mags.max(), nlvls)
+    ax = fig.add_axes([0, 0, 1, 1], xticks=[], yticks=[])
+    lvls = np.linspace(cmin, cmax, nlvls)
 
-    m.ax.tricontourf(triang_subset, mags, levels=lvls)
+    ax.contourf(xcrs, ycrs, data, levels=lvls, cmap=colormap)
 
-    logger.info("tricontourf done.")
-
-    m.ax.quiver(lon,lat,dx/mags,dy/mags)
-    logger.info("quiver done.")
-
-    m.ax.set_xlim(lonmin, lonmax)
-    m.ax.set_ylim(latmin, latmax)
-    m.ax.set_frame_on(False)
-    m.ax.set_clip_on(False)
-    m.ax.set_position([0, 0, 1, 1])
+    ax.set_xlim(xmin, ymin)
+    ax.set_ylim(ymin, ymax)
+    ax.set_frame_on(False)
+    ax.set_clip_on(False)
+    ax.set_position([0, 0, 1, 1])
+    
     canvas = FigureCanvasAgg(fig)
+    
     response = HttpResponse(content_type='image/png')
     canvas.print_png(response)
+    
     return response
+        
+
+
