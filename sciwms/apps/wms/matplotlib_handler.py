@@ -140,6 +140,7 @@ def tricontourf_response(triang_subset,
 
     xmin, ymin, xmax, ymax = wms_handler.get_bbox(request)
     width, height = wms_handler.get_width_height(request)
+    
     colormap = wms_handler.get_colormap(request)
     logger.debug("colormap = {0}".format(colormap))
     
@@ -195,6 +196,7 @@ def ugrid_quiver_response(lon,
 
     xmin, ymin, xmax, ymax = wms_handler.get_bbox(request)
     width, height = wms_handler.get_width_height(request)
+    
     colormap = wms_handler.get_colormap(request)
     logger.debug("colormap = {0}".format(colormap))
 
@@ -217,7 +219,7 @@ def ugrid_quiver_response(lon,
     logger.debug("mags.max() = {0}".format(mags.max()))
     logger.debug("mags = {0}".format(mags[100:150]))
 
-    ax.quiver(x, y, dx/mags, dy/mags, mags)
+    ax.quiver(x, y, dx/mags, dy/mags, mags,cmap=colormap)
 
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
