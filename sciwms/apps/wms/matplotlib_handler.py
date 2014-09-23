@@ -250,12 +250,18 @@ def quiver_response(lon,
     
     
     #scale to cmin - cmax
-    dx = cmin + dx*(cmax-cmin)
-    dy = cmin + dy*(cmax-cmin)
+    # dx = cmin + dx*(cmax-cmin)
+    # dy = cmin + dy*(cmax-cmin)
     mags = np.sqrt(dx**2 + dy**2)
-    mags[mags>cmax] = cmax
+    # mags[mags>cmax] = cmax
+
+    import matplotlib as mpl
+    cmap = mpl.cm.get_cmap(colormap)
+    bounds = np.linspace(cmin, cmax, 15)
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
     if settings.DEBUG==True:
+        logger.debug("mags.shape = {0}".format(mags.shape))
         logger.debug("mags.max() = {0}".format(mags.max()))
         logger.debug("mags.min() = {0}".format(mags.min()))
 
@@ -267,7 +273,7 @@ def quiver_response(lon,
         ax.quiver(x, y, dx/mags, dy/mags, mags, cmap=colormap)
     else:
         # ax.quiver(x, y, dx, dy, mags, cmap=colormap)
-        ax.quiver(x, y, dx/mags, dy/mags, mags, cmap=colormap)
+        ax.quiver(x, y, dx/mags, dy/mags, mags, cmap=colormap,norm=norm)
 
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
