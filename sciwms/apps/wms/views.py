@@ -178,7 +178,7 @@ def colormaps(request):
     """
     #if not requesting a specific colormap, get a list (json) of colormaps
     #if requesting a specific colormap, get a small png preview
-    colormap = request.GET.get('colormap')
+    colormap = request.GET.get('colormap',"").replace('-','_')
     logger.debug("colormap = {0}".format(colormap))
     if not colormap:
         import matplotlib.pyplot as plt
