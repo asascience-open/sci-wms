@@ -201,7 +201,7 @@ def quiver_response(lon,
                     dx,
                     dy,
                     request,
-                    unit_vectors=True,
+                    unit_vectors=False,
                     dpi=80):
     
     logger.debug("Rendering ugrid quiver response.")
@@ -214,7 +214,21 @@ def quiver_response(lon,
     colormap = wms_handler.get_colormap(request)
     logger.debug("colormap = {0}".format(colormap))
 
+    climits = wms_handler.get_climits(request)
+
+    cmax = 1.
+    if len(climits) == 2:
+        logger.debug("cmin = {0}, cmax = {1}".format(*climits))
+        cmax = climits[1]
+    else:
+        logger.debug("No climits, default cmax to 1.0")
+
+
     proj = get_pyproj(request)
+
+    logger.debug("Projecting ugrid lat/lon.")
+    x, y = proj(lon, lat)
+    logger.debug("Done projecting ugrid lat/lon.")
     
     fig = Figure(dpi=dpi, facecolor='none', edgecolor='none')
     fig.set_alpha(0)
@@ -223,20 +237,16 @@ def quiver_response(lon,
 
     ax = fig.add_axes([0., 0., 1., 1.], xticks=[], yticks=[])
     ax.set_axis_off()
-
-    logger.debug("Projecting ugrid lat/lon.")
-    x, y = proj(lon, lat)
-    logger.debug("Done projecting ugrid lat/lon.")
-
+    
+    mags = np.sqrt(dx**2 + dy**2)
     #plot unit vectors
     if unit_vectors:
-        mags = np.sqrt(dx**2 + dy**2)
         logger.debug("mags.max() = {0}".format(mags.max()))
         logger.debug("mags = {0}".format(mags[100:150]))
 
         ax.quiver(x, y, dx/mags, dy/mags, mags, cmap=colormap)
     else:
-        ax.quiver(x, y, dx, dy, cmap=colormap)
+        ax.quiver(x, y, dx/cmax, dy/cmax, mags, cmap=colormap)
 
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
