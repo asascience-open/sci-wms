@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
+from django.conf import settings
 from django.http import HttpResponse
 
 from . import wms_handler
@@ -134,7 +135,12 @@ def tricontourf_canvas(topology, datasetnc, request):
     #compute triangular subset
     lon = topology.nodes[:,0]
     lat = topology.nodes[:,1]
-    latlon_sub_idx = get_lat_lon_subset_idx(topology.nodes[:,0], topology[:,1], lonmin, latmin, lonmax, latmax)
+    latlon_sub_idx = get_lat_lon_subset_idx(topology.nodes[:,0],
+                                            topology[:,1],
+                                            lonmin,
+                                            latmin,
+                                            lonmax,
+                                            latmax)
 
     nv_sub_idx = get_nv_subset_idx(topology.faces[:], sub_idx)
 
@@ -216,12 +222,16 @@ def quiver_response(lon,
     climits = wms_handler.get_climits(request)
 
     cmax = 1.
+    cmin = 0.
+    
     if len(climits) == 2:
         logger.debug("cmin = {0}, cmax = {1}".format(*climits))
-        cmax = climits[1]
+        cmin, cmax = climits
     else:
         logger.debug("No climits, default cmax to 1.0")
 
+    # cmax = 10.
+    logger.debug("cmin = {0}, cmax = {1}".format(cmin, cmax))
 
     proj = get_pyproj(request)
 
@@ -237,7 +247,18 @@ def quiver_response(lon,
     ax = fig.add_axes([0., 0., 1., 1.], xticks=[], yticks=[])
     ax.set_axis_off()
     
+    
+    
+    #scale to cmin - cmax
+    dx = cmin + dx*(cmax-cmin)
+    dy = cmin + dy*(cmax-cmin)
     mags = np.sqrt(dx**2 + dy**2)
+    mags[mags>cmax] = cmax
+
+    if settings.DEBUG==True:
+        logger.debug("mags.max() = {0}".format(mags.max()))
+        logger.debug("mags.min() = {0}".format(mags.min()))
+
     #plot unit vectors
     if unit_vectors:
         logger.debug("mags.max() = {0}".format(mags.max()))
@@ -245,7 +266,8 @@ def quiver_response(lon,
 
         ax.quiver(x, y, dx/mags, dy/mags, mags, cmap=colormap)
     else:
-        ax.quiver(x, y, dx/cmax, dy/cmax, mags, cmap=colormap)
+        # ax.quiver(x, y, dx, dy, mags, cmap=colormap)
+        ax.quiver(x, y, dx/mags, dy/mags, mags, cmap=colormap)
 
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
