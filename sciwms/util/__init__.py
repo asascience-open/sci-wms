@@ -45,9 +45,13 @@ def rtree_nodes_exists(dataset_name):
     Return True if there is a node rtree index for the given dataset_name.
     Return False otherwise
     """
-    nodes_path, idx_path, dat_path = get_rtree_cells_path(dataset_name)
+    nodes_path, idx_path, dat_path = get_rtree_nodes_path(dataset_name)
+    logger.debug("rtree_nodes_exists::os.path.exists(idx_path) is {0}".\
+                 format(os.path.exists(idx_path)))
+    logger.debug("rtree_nodes_exists::os.path.exists(dat_path) is {0}".\
+                 format(os.path.exists(dat_path)))
     
-    return (os.path.exists(idx_path) and os.path.exists(dat_path))
+    return os.path.exists(idx_path) == True and os.path.exists(dat_path) == True
 
 def get_rtree_cells_path(dataset_name):
     """
@@ -65,7 +69,7 @@ def rtree_cells_exists(dataset_name):
     Return False otherwise
     """
     cells_root, idx_path, dat_path = get_rtree_cells_path(dataset_name)
-    return (os.path.exists(idx_path) and os.path.exists(dat_path))
+    return os.path.exists(idx_path) == True and os.path.exists(dat_path) == True
     
     
     
