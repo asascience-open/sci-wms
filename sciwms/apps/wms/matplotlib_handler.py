@@ -177,8 +177,7 @@ def tricontourf_response(triang_subset,
     ax = fig.add_axes([0., 0., 1., 1.], xticks=[], yticks=[])
     ax.set_axis_off()
 
-    lvls = np.linspace(data.min(), data.max(), int(clvls))
-    # lvls = np.linspace(float(cmin), float(cmax), int(clvls))
+    lvls = np.linspace(float(cmin), float(cmax), int(clvls))
     logger.debug("lvls = {0}".format(lvls))
     ax.tricontourf(triang_subset, data, levels = lvls, cmap=colormap)
 

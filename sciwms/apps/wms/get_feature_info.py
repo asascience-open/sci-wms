@@ -79,6 +79,8 @@ def getFeatureInfo(request, dataset):
                         ymax-((ymax-ymin)*(Y/height)),
                         inverse=True)
 
+        logger.debug('tlon = {0}, tlat = {1}'.format(tlon,tlat))
+
         lonmin, latmin = mi(xmin, ymin, inverse=True)
         lonmax, latmax = mi(xmax, ymax, inverse=True)
 
@@ -151,7 +153,7 @@ def getFeatureInfo(request, dataset):
         try:
             # find closest node or cell (only doing node for now)
             nindex = list(tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True))[0]
-            logger.debug('nindex = {0}'.format(nindex))
+            logger.debug('nearest index = {0}'.format(nindex))
             
             selected_longitude, selected_latitude = tuple(nindex.bbox[:2])
             logger.debug('selected_longitude = {0}, selected_latitude = {1}'.\
