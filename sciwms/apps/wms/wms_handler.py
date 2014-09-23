@@ -36,15 +36,6 @@ def get_bbox(request):
     """
     return [float(el) for el in request.GET["bbox"].split(",")]
 
-
-def get_window_size(request):
-    """
-    Return width and height of the view in pixel units.
-    """
-    height = requestobj.GET["height"]
-    width = requestobj.GET["width"]
-    return width, height
-
 def get_projection_string(request):
     """
     Return the projection string passed into the request.
@@ -60,6 +51,20 @@ def get_projection_string(request):
         logger.info("SRS or CRS no available in requst, defaulting to EPSG:3857 (mercator)")
 
     return projstr
+
+def get_xy(request):
+    """
+    Returns list of floats
+    """
+    xy = [None, None]
+    x = request.GET.get('x')
+    if x:
+        xy[0] = float(x)
+    y = request.GET.get('y')
+    if y:
+        xy[1] = float(y)
+
+    return xy
 
 def get_layers(request):
     """
@@ -162,8 +167,7 @@ def get_elevation(request):
     try:
         return float(request.GET["ELEVATION"])
     except:
-        return [0]
-
+        return 0
 
 def get_width_height(request):
     """
