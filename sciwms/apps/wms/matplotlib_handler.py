@@ -165,6 +165,13 @@ def tricontourf_response(triang_subset,
     
     cmin, cmax = wms_handler.get_climits(request)
     logger.debug("cmin = {0}, cmax = {1}".format(cmin, cmax))
+
+    try:
+        data[data>cmax] = cmax
+        data[data<cmin] = cmin
+    except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        logger.info("tricontourf_response error: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
     
     clvls = wms_handler.get_clvls(request)
     logger.debug("clvls = {0}".format(clvls))
