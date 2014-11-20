@@ -73,6 +73,8 @@ import numpy as np
 from .get_map import getMap
 from .get_feature_info import getFeatureInfo
 
+from ...util import cf
+
 output_path = os.path.join(settings.PROJECT_ROOT, 'logs', 'sciwms_wms.log')
 # Set up Logger
 logger = multiprocessing.get_logger()
@@ -950,7 +952,7 @@ def getLegendGraphic(request, dataset):
     Create the colorbar or legend and add to axis
     """
     try:
-        units = nc.variables[variables[0]].units
+        units = cf.get_by_standard_name(nc, variables[0]).units
     except:
         units = ''
     if climits[0] is None or climits[1] is None:  # TODO: NOT SUPPORTED RESPONSE
