@@ -112,14 +112,12 @@ def datasets(request):
         data = json.dumps(js_obj.json)
         if 'callback' in request.REQUEST:
             data = "{0}({1})".format(request.REQUEST['callback'], data)
-        logger.info("Returning json_all object")
     except:
         from django.core import serializers
         datasets = Dataset.objects.all()
         data = serializers.serialize('json', datasets)
-        logger.info("Returning serialized datasets.")
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        logger.info(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        logger.debug(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
     return HttpResponse(data, mimetype='application/json')
 
 def standard_names(request):
@@ -469,7 +467,6 @@ def wms(request, dataset):
             response = getLegendGraphic(request, dataset)
         elif reqtype.lower() == 'getcapabilities':
             response = getCapabilities(request, dataset)
-        logger.info(str(request.GET))
         return response
     except Exception:
         raise
@@ -1024,7 +1021,6 @@ def getLegendGraphic(request, dataset):
                     #levels.append(str(value) + "-" + str(levs[i+1]))
                     text = '%.2f-%.2f' % (value, levs[i+1])
                     levels.append(text)
-            logger.info( str((levels, levs)) )
             fig.legend(proxy, levels,
                        #bbox_to_anchor = (0, 0, 1, 1),
                        #bbox_transform = fig.transFigure,

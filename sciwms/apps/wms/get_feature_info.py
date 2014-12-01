@@ -51,7 +51,6 @@ def getFeatureInfo(request, dataset):
      /wms/GOM3/?ELEVATION=1&LAYERS=temp&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=facets_average_jet_0_32_node_False&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo&SRS=EPSG:3857&BBOX=-7949675.196111,5078194.822174,-7934884.63114,5088628.476533&X=387&Y=196&INFO_FORMAT=text/csv&WIDTH=774&HEIGHT=546&QUERY_LAYERS=salinity&TIME=2012-08-14T00:00:00/2012-08-16T00:00:00
     """
     try:
-        logger.info("IN getFeatureInfo!!!")
         X, Y = wms_handler.get_xy(request)
         logger.debug("x = {0}, y = {1}".format(X,Y))
 
@@ -88,7 +87,7 @@ def getFeatureInfo(request, dataset):
                      format(lonmin, latmin, lonmax, latmax))
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        logger.info("getFeatureInfo ERROR: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        logger.warning("getFeatureInfo ERROR: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
 
     # want data at (tlon,tlat)
 
@@ -102,16 +101,16 @@ def getFeatureInfo(request, dataset):
     # ------------------------------------------------------------------------------------------------------------UGRID
     # pyugrid to handle UGRID topology
     try:
-        logger.info("Trying to load pyugrid cache {0}".format(dataset))
+        logger.debug("Trying to load pyugrid cache {0}".format(dataset))
         try:
             topology_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc')
         
             ug = pyugrid.UGrid.from_ncfile(topology_path)
         except:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            logger.info("getFeatureInfo ERROR: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+            logger.warning("getFeatureInfo ERROR: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
             
-        logger.info("Loaded pyugrid cache")
+        logger.debug("Loaded pyugrid cache")
 
         # UGRID variables
         lon = ug.nodes[:,0]
@@ -131,21 +130,20 @@ def getFeatureInfo(request, dataset):
             
             tree = None
             if rtree_nodes_exists(dataset):
-                    logger.info('UGRID node index found %s' % nodes_path)
+                    logger.debug('UGRID node index found %s' % nodes_path)
                     tree = rindex.Index(nodes_path)
-                    logger.info('UGRID node index loaded.')
+                    logger.debug('UGRID node index loaded.')
 
                     print_exception(log=logger)
             else:
                 def generator_nodes():
                     for i, c in enumerate(zip(lon, lat, lon, lat)):
                         yield(i, c, None)
-                logger.info('UGRID indexing nodes %s' % idx_path)
+                logger.debug('UGRID indexing nodes %s' % idx_path)
                 tree = rindex.Index(nodes_path, generator_nodes(), overwrite=True)
-                logger.info('UGRID nodes indexed')
+                logger.debug('UGRID nodes indexed')
 
         except:
-            logger.info("HERE")
             print_exception(log=logger)
             
         logger.debug('Searching for closest node/cell for tlat={0}, tlon={1}'.\
@@ -163,10 +161,8 @@ def getFeatureInfo(request, dataset):
             # tree.close()
         except:
             print_exception(log=logger)
-            logger.info("there")
         finally:
             tree.close()
-            logger.info("everywhere")
             
         logger.debug("Found closest node/cell @ index = {0}".format(index))
         
@@ -186,7 +182,7 @@ def getFeatureInfo(request, dataset):
         nodes_path = os.path.join(settings.TOPOLOGY_PATH, dataset + '_nodes')
         if os.path.exists(nodes_path+'.dat') and os.path.exists(nodes_path+'.idx'):
             tree = rindex.Index(nodes_path)
-            logger.info('non-UGRID node index found %s' % nodes_path)
+            logger.debug('non-UGRID node index found %s' % nodes_path)
         else:
             def generator_nodes():
                 c = -1
@@ -195,20 +191,20 @@ def getFeatureInfo(request, dataset):
                         coord = (lons[row, col], lats[row, col], lons[row, col], lats[row, col],)
                         c += 1
                         yield(c, coord, ((row,), (col,)))
-            logger.info('non-UGRID indexing nodes %s' % nodes_path)
+            logger.debug('non-UGRID indexing nodes %s' % nodes_path)
             tree = rindex.Index(nodes_path, generator_nodes(), overwrite=True)
-            logger.info('non-UGRID nodes indexed')
+            logger.debug('non-UGRID nodes indexed')
 
         # find closest node or cell (only doing node for now)
         nindex = list(tree.nearest((tlon, tlat, tlon, tlat), 1, objects=True))[0] # returns generator > cast to list and get [0] value
         # why are lat/lon 3d? eg. why using the [0] index in next line for both lats and lons
-        logger.info('shape of lons: {0}'.format(lons.shape))
-        logger.info('shape of lats: {0}'.format(lats.shape))
+        logger.debug('shape of lons: {0}'.format(lons.shape))
+        logger.debug('shape of lats: {0}'.format(lats.shape))
         
         selected_longitude, selected_latitude = lons[nindex.object[0], nindex.object[1]][0], lats[nindex.object[0], nindex.object[1]][0]
         #index = nindex.object # tuple ((row,),(col,))
         index = (nindex.object[0][0],nindex.object[1][0]) # tuple(row,col) from that nasty ((row,),(col,)) returned object
-        logger.info('index: {0}'.format(index))
+        logger.debug('index: {0}'.format(index))
         tree.close()
         #index = numpy.asarray(index) # array([[row],[col]])
         topology.close()
@@ -218,7 +214,7 @@ def getFeatureInfo(request, dataset):
     try:
         url = Dataset.objects.get(name=dataset).path()
     except:
-        logger.error("Couldn't find {0} in database".format(dataset))
+        logger.warning("Couldn't find {0} in database".format(dataset))
         print_exception(log=logger)
         
     datasetnc = netCDF4.Dataset(url)
@@ -321,7 +317,7 @@ def getFeatureInfo(request, dataset):
             except:
                 units = ""
             values = getvar(variable, time, elevation, index)
-            logger.info('appending ({0},{1},{2})'.format(var,units,":"))
+            logger.debug('appending ({0},{1},{2})'.format(var,units,":"))
             varis.append((var, units, values))
     except:
         print_exception(log=logger)

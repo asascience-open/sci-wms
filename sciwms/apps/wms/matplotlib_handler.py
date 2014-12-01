@@ -76,7 +76,7 @@ def get_nearest_start_time(nc,datestart):
             time = time if abs(times[time]-datestart) < abs(times[time-1]-datestart) else time-1
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        logger.info("ERROR: get_nearest_start_time:: "
+        logger.warning("ERROR: get_nearest_start_time:: "
                     + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
     finally:
         del times
@@ -171,7 +171,7 @@ def tricontourf_response(triang_subset,
         data[data<cmin] = cmin
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        logger.info("tricontourf_response error: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        logger.warning("tricontourf_response error: " + repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
     
     clvls = wms_handler.get_clvls(request)
     logger.debug("clvls = {0}".format(clvls))
@@ -303,7 +303,7 @@ def contourf_response(lon,
                       dpi=80,
                       nlvls = 15):
 
-    logger.info("Rendering c-grid countourf.")
+    logger.debug("Rendering c-grid countourf.")
 
     xmin, ymin, xmax, ymax = wms_handler.get_bbox(request)
     logger.debug("xmin, ymin, xmax, ymax = {0}".format([xmin, ymin, xmax, ymax]))

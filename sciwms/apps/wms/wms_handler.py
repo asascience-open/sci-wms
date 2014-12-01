@@ -48,7 +48,7 @@ def get_projection_string(request):
 
     if not projstr:
         projstr = "EPSG:3857"
-        logger.info("SRS or CRS no available in requst, defaulting to EPSG:3857 (mercator)")
+        logger.debug("SRS or CRS no available in requst, defaulting to EPSG:3857 (mercator)")
 
     return projstr
 
