@@ -639,8 +639,14 @@ def getCapabilities(req, dataset):  # TODO move get capabilities to template sys
                 ET.SubElement(layer1, "Abstract").text = variable
             ET.SubElement(layer1, "SRS").text = "EPSG:3857"
             llbbox = ET.SubElement(layer1, "LatLonBoundingBox")
-            templon = topology.variables["lon"][:]
-            templat = topology.variables["lat"][:]
+            try:
+                templon = topology.variables["lon"][:]
+                templat = topology.variables["lat"][:]
+            except:
+                # uses pyugrid to get array of lon/lat for BBOX
+                ug = pyugrid.UGrid.from_ncfile(os.path.join(settings.TOPOLOGY_PATH, dataset + '.nc'))
+                templon = ug.nodes[:,0]
+                templat = ug.nodes[:,1]
             #templon = templon[not numpy.isnan(templon)]
             #templat = templat[not numpy.isnan(templat)]
             llbbox.attrib["minx"] = str(numpy.nanmin(templon))

@@ -116,6 +116,39 @@ def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
         #create the local cache temp file
         nclocalpath = os.path.join(settings.TOPOLOGY_PATH, dataset_name+".nc.updating")
         ug.save_as_netcdf(nclocalpath)
+
+        # append time to nclocalpath TODO: copied from create_topology_cgrid, generalize to both
+        nc = ncDataset(url) # cleanup?
+        nclocal = ncDataset(nclocalpath, mode="a")
+        if "time" in nc.variables:
+            nclocal.createDimension('time', nc.variables['time'].shape[0])
+            if nc.variables['time'].ndim > 1:
+                time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=(nc.variables['time'].shape[0],), zlib=False, complevel=0)
+            else:
+                time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=nc.variables['time'].shape, zlib=False, complevel=0)
+        else:
+            nclocal.createDimension('time', 1)
+            time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=(1,), zlib=False, complevel=0)
+        if "time" in nc.variables:
+            if nc.variables['time'].ndim > 1:
+                _str_data = nc.variables['time'][:, :]
+                #print _str_data.shape, type(_str_data), "''", str(_str_data[0,:].tostring().replace(" ","")), "''"
+                dates = [parse(_str_data[i, :].tostring()) for i in range(len(_str_data[:, 0]))]
+                time[:] = date2num(dates, time_units)
+                time.units = time_units
+            else:
+                time[:] = nc.variables['time'][:]
+                time.units = nc.variables['time'].units
+        else:
+            time[:] = np.ones(1)
+            time.units = time_units
+
+        # add global attribute 'grid = False' (for backwards sciwms compatibility)
+        nclocal.grid = 'False'
+
+        nclocal.sync()
+
+
         
         #move local cache temp to final destination(overwrite existing)
         shutil.move(nclocalpath, nclocalpath.replace(".updating", ""))
