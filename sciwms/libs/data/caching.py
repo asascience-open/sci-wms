@@ -47,6 +47,7 @@ from netCDF4 import date2num
 
 from sciwms.apps.wms.models import Dataset
 from sciwms.libs.data import build_tree
+import sciwms.util.cf as cf
 
 import rtree
 
@@ -106,6 +107,10 @@ def create_rtree_from_ug(ug, dataset_name):
     
     
 def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
+
+    if url.endswith('.html'):
+        url = url[:-5]
+
     try:
         logger.info("Trying pyugrid")
         #try to load ugrid
@@ -116,39 +121,6 @@ def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
         #create the local cache temp file
         nclocalpath = os.path.join(settings.TOPOLOGY_PATH, dataset_name+".nc.updating")
         ug.save_as_netcdf(nclocalpath)
-
-        # append time to nclocalpath TODO: copied from create_topology_cgrid, generalize to both
-        nc = ncDataset(url) # cleanup?
-        nclocal = ncDataset(nclocalpath, mode="a")
-        if "time" in nc.variables:
-            nclocal.createDimension('time', nc.variables['time'].shape[0])
-            if nc.variables['time'].ndim > 1:
-                time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=(nc.variables['time'].shape[0],), zlib=False, complevel=0)
-            else:
-                time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=nc.variables['time'].shape, zlib=False, complevel=0)
-        else:
-            nclocal.createDimension('time', 1)
-            time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=(1,), zlib=False, complevel=0)
-        if "time" in nc.variables:
-            if nc.variables['time'].ndim > 1:
-                _str_data = nc.variables['time'][:, :]
-                #print _str_data.shape, type(_str_data), "''", str(_str_data[0,:].tostring().replace(" ","")), "''"
-                dates = [parse(_str_data[i, :].tostring()) for i in range(len(_str_data[:, 0]))]
-                time[:] = date2num(dates, time_units)
-                time.units = time_units
-            else:
-                time[:] = nc.variables['time'][:]
-                time.units = nc.variables['time'].units
-        else:
-            time[:] = np.ones(1)
-            time.units = time_units
-
-        # add global attribute 'grid = False' (for backwards sciwms compatibility)
-        nclocal.grid = 'False'
-
-        nclocal.sync()
-
-
         
         #move local cache temp to final destination(overwrite existing)
         shutil.move(nclocalpath, nclocalpath.replace(".updating", ""))
@@ -171,40 +143,51 @@ def create_topology_cgrid(dataset_name, url, lat_var='lat', lon_var='lon'):
         nclocal = ncDataset(nclocalpath, mode="w", clobber=True)
 
         logger.info("identified as grid")
-        latname, lonname = lat_var, lon_var
-        if latname not in nc.variables:
-            for key in nc.variables.iterkeys():
-                try:
-                    nc.variables[key].__getattr__('units')
-                    temp_units = nc.variables[key].units
-                    if (not '_u' in key) and (not '_v' in key) and (not '_psi' in key):
-                        if 'degree' in temp_units:
-                            if 'east' in temp_units:
-                                lonname = key
-                            elif 'north' in temp_units:
-                                latname = key
-                            else:
-                                raise ValueError("No valid coordinates found in source netcdf file")
-                except:
-                    pass
-        if nc.variables[latname].ndim > 1:
-            igrid = nc.variables[latname].shape[0]
-            jgrid = nc.variables[latname].shape[1]
+
+        nclon = cf.get_by_standard_name(nc, 'longitude')
+        nclat = cf.get_by_standard_name(nc, 'latitude')
+        nctime = cf.get_by_standard_name(nc, 'time')
+
+#        latname, lonname = lat_var, lon_var
+#        if latname not in nc.variables:
+#            for key in nc.variables.iterkeys():
+#                try:
+#                    nc.variables[key].__getattr__('units')
+#                    temp_units = nc.variables[key].units
+#                    if (not '_u' in key) and (not '_v' in key) and (not '_psi' in key):
+#                        if 'degree' in temp_units:
+#                            if 'east' in temp_units:
+#                                lonname = key
+#                            elif 'north' in temp_units:
+#                                latname = key
+#                            else:
+#                                raise ValueError("No valid coordinates found in source netcdf file")
+#                except:
+#                    pass
+        if nclat.ndim > 1:
+            igrid = nclat.shape[0]
+            jgrid = nclat.shape[1]
             grid = 'cgrid'
         else:
+            # i/j backwards? isn't i == longitude and j == latitide? check where igrid/jgrid used
             grid = 'rgrid'
-            igrid = nc.variables[latname].shape[0]
-            jgrid = nc.variables[lonname].shape[0]
+            #igrid = nc.variables[latname].shape[0]
+            #jgrid = nc.variables[lonname].shape[0]
+            igrid = nclat.shape[0]
+            jgrid = nclon.shape[0]
         latchunk, lonchunk = (igrid, jgrid,), (igrid, jgrid,)
         logger.info("native grid style identified")
         nclocal.createDimension('igrid', igrid)
         nclocal.createDimension('jgrid', jgrid)
-        if "time" in nc.variables:
-            nclocal.createDimension('time', nc.variables['time'].shape[0])
-            if nc.variables['time'].ndim > 1:
-                time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=(nc.variables['time'].shape[0],), zlib=False, complevel=0)
+        #if "time" in nc.variables:
+        if nctime is not None:
+            #nclocal.createDimension('time', nc.variables['time'].shape[0])
+            nclocal.createDimension('time', nctime.shape[0])
+            #if nc.variables['time'].ndim > 1:
+            if nctime.ndim > 1:
+                time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=(nctime.shape[0],), zlib=False, complevel=0)
             else:
-                time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=nc.variables['time'].shape, zlib=False, complevel=0)
+                time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=nctime.shape, zlib=False, complevel=0)
         else:
             nclocal.createDimension('time', 1)
             time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=(1,), zlib=False, complevel=0)
@@ -212,25 +195,25 @@ def create_topology_cgrid(dataset_name, url, lat_var='lat', lon_var='lon'):
         lat = nclocal.createVariable('lat', 'f', ('igrid', 'jgrid',), chunksizes=latchunk, zlib=False, complevel=0)
         lon = nclocal.createVariable('lon', 'f', ('igrid', 'jgrid',), chunksizes=lonchunk, zlib=False, complevel=0)
         logger.info("variables created in cache")
-        lontemp = nc.variables[lonname][:]
+        lontemp = nclon[:]
         lontemp[lontemp > 180] = lontemp[lontemp > 180] - 360
 
         if grid == 'rgrid':
-            lon[:], lat[:] = np.meshgrid(lontemp, nc.variables[latname][:])
+            lon[:], lat[:] = np.meshgrid(lontemp, nclat[:])
             grid = 'cgrid'
         else:
             lon[:] = lontemp
-            lat[:] = nc.variables[latname][:]
-        if "time" in nc.variables:
-            if nc.variables['time'].ndim > 1:
-                _str_data = nc.variables['time'][:, :]
+            lat[:] = nclat[:]
+        if nctime is not None:
+            if nctime.ndim > 1:
+                _str_data = nctime[:, :]
                 #print _str_data.shape, type(_str_data), "''", str(_str_data[0,:].tostring().replace(" ","")), "''"
                 dates = [parse(_str_data[i, :].tostring()) for i in range(len(_str_data[:, 0]))]
                 time[:] = date2num(dates, time_units)
                 time.units = time_units
             else:
-                time[:] = nc.variables['time'][:]
-                time.units = nc.variables['time'].units
+                time[:] = nctime[:]
+                time.units = nctime.units
         else:
             time[:] = np.ones(1)
             time.units = time_units
