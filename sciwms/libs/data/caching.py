@@ -281,10 +281,9 @@ def update_dataset_cache(dataset):
             if dataset.keep_up_to_date:
                 try:
                     nc = ncDataset(dataset.path())
-                    topo = ncDataset(os.path.join(
-                        settings.TOPOLOGY_PATH, dataset.name + ".nc"))
+                    topo = ncDataset(os.path.join(settings.TOPOLOGY_PATH, dataset.name+".nc"))
 
-                    time1 = nc.variables['time'][-1]
+                    time1 = cf.get_by_standard_name(nc, 'time')[-1]
                     time2 = topo.variables['time'][-1]
                     if time1 != time2:
                         logger.info("Updating: " + dataset.path())
