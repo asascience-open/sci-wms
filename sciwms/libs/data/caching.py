@@ -114,14 +114,45 @@ def create_topology(dataset_name, url, lat_var='lat', lon_var='lon'):
     try:
         logger.info("Trying pyugrid")
         #try to load ugrid
-        ug = pyugrid.UGrid.from_ncfile(url)
+        nc = ncDataset(url)
+        ug = pyugrid.UGrid.from_nc_dataset(nc)
 
         logger.info("Identified as UGrid---Using pyugrid to cache")
         
         #create the local cache temp file
         nclocalpath = os.path.join(settings.TOPOLOGY_PATH, dataset_name+".nc.updating")
         ug.save_as_netcdf(nclocalpath)
-        
+
+        # --------------------------------
+        # add time to UGRID topology files
+        # --------------------------------
+        # get local file (just created by pyugrid)
+        nclocal = ncDataset(nclocalpath, mode='r+')
+        # get remote time
+        nctime = cf.get_by_standard_name(nc, 'time')
+        # create 'time' dimension and variable
+        if nctime is not None:
+            nclocal.createDimension('time', nctime.shape[0])
+            if nctime.ndim > 1:
+                time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=(nctime.shape[0],), zlib=False, complevel=0)
+                _str_data = nctime[:, :]
+                dates = [parse(_str_data[i, :].tostring()) for i in range(len(_str_data[:, 0]))]
+                time[:] = date2num(dates, time_units)
+                time.units = time_units
+            else:
+                time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=nctime.shape, zlib=False, complevel=0)
+                time[:] = nctime[:]
+                time.units = nctime.units
+        else:
+            nclocal.createDimension('time', 1)
+            time = nclocal.createVariable('time', 'f8', ('time',), chunksizes=(1,), zlib=False, complevel=0)
+            time[:] = np.ones(1)
+            time.units = time_units
+
+        logger.info("data written to file")
+        nclocal.sync()
+
+
         #move local cache temp to final destination(overwrite existing)
         shutil.move(nclocalpath, nclocalpath.replace(".updating", ""))
 
