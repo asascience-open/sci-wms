@@ -906,6 +906,22 @@ def getCapabilities(req, dataset):  # TODO move get capabilities to template sys
         tree.write(response)
     return response
 
+# added for getLegendGraphic, to place the verical level in the legend
+def _get_vertical_level(nc, v):
+    # get the coordinates attribute
+    coordinates = getattr(v, 'coordinates', None)
+    for coordinate in coordinates.split():
+        if nc.variables[coordinate].shape == (v.shape[1],): # TODO second index is vert?
+            z = nc.variables[coordinate]
+            units = getattr(z, 'units', None)
+            logger.debug('units {0}'.format(units))
+            if units is not None and units.strip():
+                return '%s\n%s' % (str(z[0]), units)
+            long_name = getattr(z, 'long_name', None)
+            logger.debug('long_name {0}'.format(long_name))
+            if long_name is not None and long_name.strip():
+                return '%s\n%s' % (str(z[0]), long_name)
+            return str(z[0])
 
 def getLegendGraphic(request, dataset):
     """
@@ -954,10 +970,15 @@ def getLegendGraphic(request, dataset):
     """
     Create the colorbar or legend and add to axis
     """
+    v = cf.get_by_standard_name(nc, variables[0])
+
     try:
-        units = cf.get_by_standard_name(nc, variables[0]).units
+        units = v.units
     except:
         units = ''
+    # vertical level label
+    if v.ndim > 3:
+        units = units + '\nvertical level: %s' % _get_vertical_level(nc, v)
     if climits[0] is None or climits[1] is None:  # TODO: NOT SUPPORTED RESPONSE
             #going to have to get the data here to figure out bounds
             #need elevation, bbox, time, magnitudebool
@@ -977,7 +998,8 @@ def getLegendGraphic(request, dataset):
                                               norm=CNorm,
                                               orientation='vertical',
                                               )
-        cb.set_label(units)
+        cb.set_label(units, size=8)
+
     else:  # plot type somekind of contour
         if plot_type == "contours":
             #this should perhaps be a legend...
