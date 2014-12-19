@@ -34,6 +34,8 @@ def get_lat_lon_subset_idx(lon,lat,lonmin,latmin,lonmax,latmax,padding=0.18):
     lying just outside the region of interest so that there are no holes in the
     rendered image.
     """
+    if lonmin > lonmax:
+        lonmin = lonmin * -1.0 # TODO: this should solve USW integration sites at wide zoom, but is it best way?
     return np.asarray(np.where(
         (lat <= (latmax + padding)) & (lat >= (latmin - padding)) &
         (lon <= (lonmax + padding)) & (lon >= (lonmin - padding)),)).squeeze()

@@ -296,6 +296,8 @@ def getMap(request, dataset):
             """
             A function to return the indicies of lat, lon within a bounding box.
             """
+            if lonmin > lonmax:
+                lonmin = lonmin * -1.0 # TODO: this should solve USW integration sites at wide zoom, but is it best way?
             return np.asarray(np.where(
                 (lat <= (latmax + padding)) & (lat >= (latmin - padding)) &
                 (lon <= (lonmax + padding)) & (lon >= (lonmin - padding)),)).squeeze()
