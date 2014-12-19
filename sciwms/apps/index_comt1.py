@@ -193,6 +193,9 @@ def main():
 
     # MANUAL COMT2 additions
     odp_id.append(('http://oceanmodeling.pmc.ucsc.edu:8080/thredds/dodsC/ccsnrt_physbio/fmrc/CCSNRT_Phys_Bio_Aggregation_best.ncd','usw_integration.ccsnrt_physbio.fmrc'))
+    odp_id.append(('http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/UND_ADCIRCSWAN/Hurricane_Georges_2D_prelim_no_waves/Output/fort.63.nc','pr_inundation_tropical.UND_ADCIRCSWAN.Hurricane_Georges_2D_prelim_no_waves'))
+    odp_id.append(('http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/EMC_ADCIRC-WW3/Dec2013Storm_2D_preliminary_run_1_waves_only/00_dir.ncml','pr_inundation_tropical.EMC_ADCIRC-WW3.Dec2013Storm_2D_preliminary_run_1_waves_only'))
+    odp_id.append(('http://comt.sura.org/thredds/dodsC/comt_2_full/pr_inundation_tropical/NRL_Delft3D/Hurricane_Ike_2D_preliminary_run_1_without_waves/00_dir.ncml','pr_inundation_tropical.NRL_Delft3D.Hurricane_Ike_2D_preliminary_run_1_without_waves'))
 
     for odp,id in odp_id:
 
