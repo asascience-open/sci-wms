@@ -1,3 +1,5 @@
+> **NOTE**: This is a **DEVELOPMENTAL** branch supporting specific requirements for the U.S. IOOS Coastal and Ocean Modeling Testbed. The results of this development are expected to be merged into the master branch as time allows.
+
 #sci-wms
 ####A Python WMS service for geospatial gridded data
 
