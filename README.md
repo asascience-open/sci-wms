@@ -1,4 +1,10 @@
-> **NOTE**: This is a **DEVELOPMENTAL** branch supporting specific requirements for the U.S. IOOS Coastal and Ocean Modeling Testbed. The results of this development are expected to be merged into the master branch as time allows.
+> **NOTE**: This is a **DEVELOPMENTAL** branch supporting specific requirements for the U.S. IOOS Coastal and Ocean Modeling Testbed. The results of this development are expected to be merged into the master branch as time allows. Several developmental gaps remain unaddressed in the comt_testbed branch as it's development was focused on specific requirements:
+
+> GetCapabilities did not function for ANY unstructured grids. Due to the way the COMT UI was designed (to support menus), GetCapabilites was not used. A non-WMS JSON endpoint was created similar to what ncWMS does for Godiva.  Work on restoring GetCapabilities functionality is ongoing, but it is not complete.
+
+> A large amount of development for COMT was to follow the [CF specification of standard_name](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#standard-name) to allow users of data from different sources to determine whether quantities were in fact comparable. Thus, support for all variables in a DAP endpoint using the internal NetCDF variable name and long_name, as was being done previously and is done by ncWMS, was not a priority and remains nonfunctional. Only variables with known COMT relevant standard_names are loaded in this branch.
+
+> COMT datasets are loaded via NGDC catalog, thus, the admin page does not function as expected in this branch.
 
 #sci-wms
 ####A Python WMS service for geospatial gridded data
