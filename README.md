@@ -67,6 +67,7 @@ pip install netCDF4>=1.0.2
 pip install rtree
 pip install south
 pip install jsonfield
+pip install pyproj
 ```
 
 You also need to ensure that you have basemap matplotlib toolkit installed,
