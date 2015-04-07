@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installation &mdash; SCI-WMS 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="SCI-WMS 0.1.0 documentation" href="index.html" />
+    <link rel="next" title="Deployment" href="deployment.html" />
+    <link rel="prev" title="Welcome to SCI-WMS" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="deployment.html" title="Deployment"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to SCI-WMS"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SCI-WMS 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Python 2.7</li>
+<li>HDF5 C library (dependency of netCDF)</li>
+<li>libcURL (required for OPeNDAP)</li>
+<li>netCDF C library (with OPeNDAP enabled)</li>
+<li><a class="reference external" href="http://libspatialindex.github.com">libspatialindex</a></li>
+<li>libPNG</li>
+<li>libFreeType</li>
+<li>libJPEG</li>
+<li>libevent</li>
+</ul>
+</div>
+<div class="section" id="download">
+<h2>Download<a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://github.com/asascience-open/sci-wms/releases">download the latest release</a> and uncompress where you would like SCI-WMS to live</p>
+</div>
+<div class="section" id="install">
+<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<p>install Python dependencies using pip</p>
+<div class="highlight-bash"><div class="highlight"><pre>pip install -r requirements.txt
+</pre></div>
+</div>
+<p><em>if NetCDF4 and HDF5 libraries are in non-typical locations, pass the locations to pip</em></p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">NETCDF4_DIR</span><span class="o">=</span>... <span class="nv">HDF5_DIR</span><span class="o">=</span>... pip install -r requirements.txt
+</pre></div>
+</div>
+<p>If you would like Gunicorn to use an alternative worker, the following are also supported:</p>
+<ul class="simple">
+<li>eventlet</li>
+<li>tornado</li>
+</ul>
+</div>
+<div class="section" id="create-database">
+<h2>Create Database<a class="headerlink" href="#create-database" title="Permalink to this headline">¶</a></h2>
+<p>Run the <cite>south</cite> database migrations to create tables and configure the administrator account</p>
+<div class="highlight-bash"><div class="highlight"><pre>python manage.py syncdb       <span class="c"># prompts to create superuser account</span>
+python manage.py migrate
+</pre></div>
+</div>
+</div>
+<div class="section" id="test">
+<h2>Test<a class="headerlink" href="#test" title="Permalink to this headline">¶</a></h2>
+<p>test SCI-WMS is fully functional by running the following command</p>
+<p>cd sciwms &amp;&amp; python manage.py test</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installation</a><ul>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#download">Download</a></li>
+<li><a class="reference internal" href="#install">Install</a></li>
+<li><a class="reference internal" href="#create-database">Create Database</a></li>
+<li><a class="reference internal" href="#test">Test</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to SCI-WMS</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="deployment.html"
+                        title="next chapter">Deployment</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/installation.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="deployment.html" title="Deployment"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to SCI-WMS"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">SCI-WMS 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2010, RPS ASA.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

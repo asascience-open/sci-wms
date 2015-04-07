@@ -1,0 +1,28 @@
+Deployment
+==========
+
+============
+Quick Start
+============
+
+To start SCI-WMS with the Django development server on port :7000, type the following commands:
+
+.. code-block:: bash
+
+    cd sciwms && python manage.py runserver 0.0.0.0:7000
+    
+**Note: runserver should not be used for production**
+
+=========================
+Using the Gunicorn Server
+=========================
+
+Gunicorn is recommended for production servers
+
+start services on port 7000
+
+.. code-block:: bash
+
+    gunicorn -c gunicorn_config_prod.py sciwms.wsgi:application
+
+`Gunicorn WSGI server configuration <http://gunicorn.org/>`_

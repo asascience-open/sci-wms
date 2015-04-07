@@ -1,0 +1,4 @@
+SCI-WMS is an open-source Python implementation of the
+OGC WMS (Web Mapping Service) API for CF-compliant oceanographic,
+atmospheric, climate and weather data which can visualize structured
+or unstructured grids adhering to CF and/or CF-UGRID conventions.

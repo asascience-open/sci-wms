@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <title>SCI-WMS by RPS ASA</title>
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/pygment_trac.css">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
@@ -17,7 +17,7 @@
         <h1>SCI-WMS</h1>
         <p>SCI-WMS: Python Web Mapping Service (WMS) for visualizing geospatial data</p>
         <p class="view"><a href="https://github.com/asascience-open/sci-wms">GitHub project<small>asascience-open/sci-wms</small></a><br>
-        <a href="docs.html">documentation</a><br>
+        <a href="docs/index.html">documentation</a><br>
         <a href="support.html">acknowledgments and support</a><br>
         <a href="http://wms.asa.rocks">demo</a></p>
         <ul>
@@ -28,47 +28,6 @@
       </header>
       <section>
         <h4><a name="a-python-wms-service-for-geospatial-gridded-data" class="anchor" href="#a-python-wms-service-for-geospatial-gridded-data"><span class="octicon octicon-link"></span></a>Python Web Mapping Service (WMS) for visualizing geospatial data</h4>
-        <h2><a name="system-requirements" class="anchor" href="#system-requirements"><span class="octicon octicon-link"></span></a>System Requirements</h2>
-        <ul>
-          <li>&gt;= 4GB RAM suggested, topology generation can impact system if low RAM</li>
-        </ul>
-        <h2><a name="configuration" class="anchor" href="#configuration"><span class="octicon octicon-link"></span></a>Configuration</h2>
-        <h4>Prerequisites</h4>
-        <ul>
-          <li>Python 2.7</li>
-          <li>HDF5 C library (dependency of netCDF)</li>
-          <li>libcURL (required for OPeNDAP)</li>
-          <li>netCDF C library (with OPeNDAP enabled)</li>
-          <li>libspatialindex (<a href="http://libspatialindex.github.com">http://libspatialindex.github.com</a>)</li>
-          <li>libPNG</li>
-          <li>libFreeType</li>
-          <li>libJPEG</li>
-          <li>libevent</li>
-        </ul>
-        <h4>Download</h4>
-        <p><a href="https://github.com/asascience-open/sci-wms/releases">download the latest release</a> and uncompress where you would like SCI-WMS to live</p>
-        <h4>Install</h4>
-        <p>install the Python dependencies using <code>pip</code></p>
-        <p>if your NetCDF4 and HDF5 libraries are in non-typical locations, you will need to pass the locations to <code>pip</code></p>
-        <div class="highlight"><pre><span class="nv">NETCDF4_DIR</span><span class="o">=</span>... <span class="nv">HDF5_DIR</span><span class="o">=</span>... pip ...</pre></div>
-        <div class="highlight"><pre>pip install -r requirements.txt</pre></div>
-        <p>If you would like Gunicorn to use an alternative worker, the following are also supported:
-          <ul>
-            <li>eventlet</li>
-            <li>tornado</li>
-          </ul>
-        </p>
-        <h4>Test</h4>
-        <p>test SCI-WMS is fully functional by running the following command</p>
-        <div class="highlight"><pre><span class="nb">cd </span>sciwms <span class="o">&amp;&amp;</span> python manage.py <span class="nb">test</span></pre></div>
-        <h2><a name="start-the-services" class="anchor" href="#start-the-services"><span class="octicon octicon-link"></span></a>Start the services</h2>
-        <p>start services on port 7000</p>
-        <div class="highlight"><pre>gunicorn -c gunicorn_config_prod.py sciwms.wsgi:application</pre></div>
-        <p><a href="http://gunicorn.org/">Gunicorn WSGI server configuration</a></p>
-
-        <h2><a name="issues" class="anchor" href="#issues"><span class="octicon octicon-link"></span></a>Known Issues:</h2>
-        <p>list of known open issues and problems</p>
-        <p><a href="https://github.com/asascience-open/sci-wms/issues?state=open">https://github.com/asascience-open/sci-wms/issues?state=open</a></p>
       </section>
       <footer>
         <p>COPYRIGHT 2010 RPS ASA</p>
@@ -76,6 +35,6 @@
         <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
       </footer>
     </div>
-    <script src="javascripts/scale.fix.js"></script>
+    <script src="js/scale.fix.js"></script>
   </body>
 </html>
