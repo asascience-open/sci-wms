@@ -1,0 +1,65 @@
+Installation
+============
+
+=============
+Prerequisites
+=============
+
+* Python 2.7
+* HDF5 C library (dependency of netCDF)
+* libcURL (required for OPeNDAP)
+* netCDF C library (with OPeNDAP enabled)
+* `libspatialindex <http://libspatialindex.github.com>`_
+* libPNG
+* libFreeType
+* libJPEG
+* libevent
+
+========
+Download
+========
+
+`download the latest release <https://github.com/asascience-open/sci-wms/releases>`_ and uncompress where you would like SCI-WMS to live
+
+=======
+Install
+=======
+
+install Python dependencies using pip
+
+.. code-block:: bash
+
+    pip install -r requirements.txt
+
+*if NetCDF4 and HDF5 libraries are in non-typical locations, pass the locations to pip*
+
+.. code-block:: bash
+
+    NETCDF4_DIR=... HDF5_DIR=... pip install -r requirements.txt
+
+If you would like Gunicorn to use an alternative worker, the following are also supported:
+
+* eventlet
+* tornado
+
+===============
+Create Database
+===============
+
+Run the `south` database migrations to create tables and configure the administrator account
+
+.. code-block:: bash
+
+    python manage.py syncdb       # prompts to create superuser account
+    python manage.py migrate
+
+
+====
+Test
+====
+
+test SCI-WMS is fully functional by running the following command
+
+.. code-block:: bash
+
+    python manage.py test

@@ -1,0 +1,34 @@
+Welcome to SCI-WMS
+===================================
+
+SCI-WMS is an open-source Python implementation of the
+OGC WMS (Web Mapping Service) API for CF-compliant oceanographic,
+atmospheric, climate and weather data which can visualize structured
+or unstructured grids adhering to CF and/or CF-UGRID conventions.
+
+.. toctree::
+   :maxdepth: 2
+
+   installation
+   deployment
+
+===================
+System Requirements
+===================
+
+* >= 4GB RAM suggested, topology generation can impact system if low RAM
+   
+========
+Features
+========
+
+* Python based OGC WMS server, leveraging the graphics capabilities of matplotlib
+* Supports unstructured grid (UGRID) model output via pyugrid
+* Local cache of grid topologies using R-Trees for fast spatial access queries
+* Supports community standard CF compliant formatted datasets
+
+=============
+Issue Tracker
+=============
+
+`asascience-open/sci-wms GitHub issues <https://github.com/asascience-open/sci-wms/issues?state=open>`_
