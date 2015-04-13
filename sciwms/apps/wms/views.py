@@ -125,6 +125,9 @@ def add(request):
         odp = request.POST['odp']
         description = request.POST['description']
         url_safe_name = re.sub('[ .!,;\-/\\\\]','_', odp.rsplit('/',1)[-1])
+        # cannot start with a digit (causes Javascript problem)
+        if url_safe_name[0].isdigit():
+            url_safe_name = '_' + url_safe_name
         try:
             dataset = Dataset.objects.get(name=url_safe_name)
             #logger.debug("Found db entry for {0}".format(url_safe_name))
@@ -177,8 +180,9 @@ def remove(request, dataset):
     return django.shortcuts.redirect('index')
 
 def refresh(request, dataset):
-    return ''
-
+    d = Dataset.objects.get(name=dataset)
+    update_dataset_cache(d)
+    return django.shortcuts.redirect('index')
 
 def lower_request(request):
     gettemp = request.GET.copy()

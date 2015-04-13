@@ -92,6 +92,7 @@
             {% if user.is_authenticated %}
             <td>
               <a href="{% url 'remove' dataset.name %}"><button type="button" class="btn btn-default btn-xs"><span style="color: red" class="glyphicon glyphicon-remove"></span> remove</button></a>
+              <a href="{% url 'refresh' dataset.name %}"><button type="button" class="btn btn-default btn-xs"><span style="color: blue" class="glyphicon glyphicon-refresh"></span> refresh</button></a>
             </td>
             {% endif %}
           </tr>
