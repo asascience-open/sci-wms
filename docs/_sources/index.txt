@@ -11,8 +11,6 @@ or unstructured grids adhering to CF and/or CF-UGRID conventions.
 
    installation
    deployment
-   configure
-   roadmap
 
 ===================
 System Requirements

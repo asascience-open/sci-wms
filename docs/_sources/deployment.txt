@@ -1,17 +1,20 @@
 Deployment
 ==========
 
-============
-Quick Start
-============
+==============================
+Quick Start (DEVELOPMENT ONLY)
+==============================
 
 To start SCI-WMS with the Django development server on port :7000, type the following commands:
 
 .. code-block:: bash
 
-    cd sciwms && python manage.py runserver 0.0.0.0:7000
+    python manage.py runserver 0.0.0.0:7000
     
-**Note: runserver should not be used for production**
+**Note:**
+
+* runserver should not be used for production
+* almost every dataset other than the smallest tested causes a SEGFAULT
 
 =========================
 Using the Gunicorn Server
@@ -19,7 +22,7 @@ Using the Gunicorn Server
 
 Gunicorn is recommended for production servers
 
-start services on port 7000
+start services on port 8080 (port specified in `gunicorn_config_prod.py`)
 
 .. code-block:: bash
 

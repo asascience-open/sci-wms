@@ -60,4 +60,6 @@ Test
 
 test SCI-WMS is fully functional by running the following command
 
-cd sciwms && python manage.py test
+.. code-block:: bash
+
+    python manage.py test
