@@ -10,4 +10,6 @@ Rtree==0.6.0
 south
 jsonfield
 pyproj
+lxml
+owslib
 -e git://github.com/pyugrid/pyugrid.git#egg=pyugrid
