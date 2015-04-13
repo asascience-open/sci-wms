@@ -3,7 +3,6 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
-
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
@@ -12,12 +11,11 @@ class Migration(SchemaMigration):
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('uri', self.gf('django.db.models.fields.CharField')(max_length=1000)),
             ('name', self.gf('django.db.models.fields.CharField')(max_length=200)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=200)),
-            ('abstract', self.gf('django.db.models.fields.CharField')(max_length=2000)),
-            ('keep_up_to_date', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('test_layer', self.gf('django.db.models.fields.CharField')(max_length=200, blank=True)),
-            ('test_style', self.gf('django.db.models.fields.CharField')(max_length=200, blank=True)),
-            ('display_all_timesteps', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('description', self.gf('django.db.models.fields.CharField')(max_length=2000)),
+            ('cache_last_updated', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('json', self.gf('jsonfield.fields.JSONField')(null=True, blank=True)),
+            ('layers', self.gf('jsonfield.fields.JSONField')(null=True, blank=True)),
+            ('topology_type', self.gf('django.db.models.fields.CharField')(default='', max_length=200, blank=True))
         ))
         db.send_create_signal('wms', ['Dataset'])
 
@@ -96,15 +94,14 @@ class Migration(SchemaMigration):
     models = {
         'wms.dataset': {
             'Meta': {'object_name': 'Dataset'},
-            'abstract': ('django.db.models.fields.CharField', [], {'max_length': '2000'}),
-            'display_all_timesteps': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'keep_up_to_date': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'uri': ('django.db.models.fields.CharField', [], {'max_length': '1000'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '200'}),
-            'test_layer': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
-            'test_style': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '200'}),
-            'uri': ('django.db.models.fields.CharField', [], {'max_length': '1000'})
+            'description': ('django.db.models.fields.CharField', [], {'max_length': '2000'}),
+            'cache_last_updated': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'json': ('jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'}),
+            'layers': ('jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'}),
+            'topology_type': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
         },
         'wms.group': {
             'Meta': {'object_name': 'Group'},

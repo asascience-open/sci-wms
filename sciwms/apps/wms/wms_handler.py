@@ -20,85 +20,161 @@ Created on Oct 17, 2011
 
 @author: ACrosby
 '''
+import multiprocessing
+
+import numpy as np
+
 from datetime import date
+from django.conf import settings
 
-class wms_handler(object):
-    '''
-    classdocs
-    '''
-    def make_action_request(self, requestobj):
-        layers = requestobj.GET["layers"]
-        try:
-            levels = requestobj.GET["elevation"]
-            if levels == "":
-                levels = "0"
-        except:
-            levels = "0"
-        '''
-        Implement more styles and things here
-        '''
-        try:
-            time = requestobj.GET["time"]
-            if time == "":
-                now = date.today().isoformat()
-                time = now + "T00:00:00"#
-        except:
-            now = date.today().isoformat()
-            time = now + "T00:00:00"#
-        time = time.split("/")
-        #print time
-        for i in range(len(time)):
-            #print time[i]
-            time[i] = time[i].replace("Z", "")
-            if len(time[i]) == 16:
-                time[i] = time[i] + ":00"
-            elif len(time[i]) == 13:
-                time[i] = time[i] + ":00:00"
-            elif len(time[i]) == 10:
-                time[i] = time[i] + "T00:00:00"
-        if len(time) > 1:
-            timestart = time[0]
-            timeend = time[1]
-        else:
-            timestart = time[0]
-            timeend = time[0]
-        box = requestobj.GET["bbox"]
-        box = box.split(",")
-        latmin = box[1]
-        latmax = box[3]
-        lonmin = box[0]
-        lonmax = box[2]
+logger = multiprocessing.get_logger()
 
-        height = requestobj.GET["height"]
-        width = requestobj.GET["width"]
-        styles = requestobj.GET["styles"].split(",")[0].split("_")
+def get_bbox(request):
+    """
+    Return the [lonmin, latmin, lonmax, lonmax] - [lower (x,y), upper(x,y)]
+    Units will be specified by projection.
+    """
+    return [float(el) for el in request.GET["bbox"].split(",")]
 
-        colormap = styles[2].replace("-", "_")
-        climits = styles[3:5]
-        topology_type = styles[5]
-        magnitude_bool = styles[6]
+def get_projection_string(request):
+    """
+    Return the projection string passed into the request.
+    Can be specified by \"SRS\" or \"CRS\" key (string).
+    If \"SRS\" or \"CRS\" is not available, default to mercator.
+    """
+    projstr = request.GET.get("srs")    
+    if not projstr:
+        projstr = request.GET.get("crs")
 
-        requestobj._set_get( {u'latmax':latmax, u'lonmax':lonmax,
-                          u'projection':u'merc', u'layer':levels,
-                          u'datestart':timestart, u'dateend':timeend,
-                          u'lonmin':lonmin, u'latmin':latmin,
-                          u'height':height, u'width':width,
-                          u'actions':("image," + \
-                          "," + styles[0] + "," + styles[1]),
-                          u'colormap': colormap,
-                          u'climits': climits,
-                          u'variables': layers,
-                          u'topologytype': topology_type,
-                          u'magnitude': magnitude_bool,
-                          } )
-        if float(lonmax)-float(lonmin) < .0001:
-            requestobj == None
-        return requestobj
+    if not projstr:
+        projstr = "EPSG:3857"
+        logger.debug("SRS or CRS no available in requst, defaulting to EPSG:3857 (mercator)")
 
+    return projstr
 
+def get_xy(request):
+    """
+    Returns list of floats
+    """
+    xy = [None, None]
+    x = request.GET.get('x')
+    if x:
+        xy[0] = float(x)
+    y = request.GET.get('y')
+    if y:
+        xy[1] = float(y)
 
-    def __init__(self, requestobj):
-        '''
-        Constructor
-        '''
-        self.request = requestobj
+    return xy
+
+def get_layers(request):
+    """
+    Returns a list of strings
+    """
+    return request.GET.get("layers").split(",")
+    #return request.GET.get("LAYERS").split(",")
+
+def get_elevation(request):
+    """
+    Return the elevation
+    """
+    try:
+        elev = request.GET["elevation"]
+        if elev == "":
+            return "0"
+    except:
+        return "0"
+
+    return elev
+
+def get_date_start_end(request):
+    time = request.GET.get('time')
+    if not time:
+        time = date.today().isoformat() + "T00:00:00"
+    time = time.split("/")
+
+    for i in range(len(time)):
+        time[i] = time[i].replace("Z", "")
+        if len(time[i]) == 16:
+            time[i] = time[i] + ":00"
+        elif len(time[i]) == 13:
+            time[i] = time[i] + ":00:00"
+        elif len(time[i]) == 10:
+            time[i] = time[i] + "T00:00:00"
+    if len(time) > 1:
+        timestart = time[0]
+        timeend = time[1]
+    else:
+        timestart = time[0]
+        timeend = time[0]
+
+    return timestart, timeend
+
+def get_style_list(request):
+    try:
+        return request.GET["styles"].split(",")[0].split("_")
+    except:
+        return []
+    
+def get_colormap(request):
+    """
+    Return style string from a list of styles
+    (as returned by get_style_list function)
+    """
+    try:
+        styles = get_style_list(request)
+        if styles:
+            return styles[2].replace("-","_")
+        return "jet"
+    except:
+        logger.debug("Using default colormap (jet)")
+        return "jet"
+
+def get_climits(request):
+    styles = get_style_list(request)
+    if styles:
+        return np.array(styles[3:5],dtype=np.float)
+    else:
+        return []
+
+def get_clvls(request):
+    try:
+        styles = get_style_list(request)
+        return int(styles[5])
+    except:
+        logger.debug("Using default clvls (15)")
+        return 15
+    
+# def get_topology_type(request):
+#     styles = get_style_list(request)
+#     if styles:
+#         return styles[5]
+#     else:
+#         return None
+
+def get_elevation(request):
+    """
+    Return WMS 'ELEVATION' (AKA z coordinate)
+    """
+    try:
+        return float(request.GET["elevation"])
+    except:
+        return 0
+
+def get_width_height(request):
+    """
+    Return width and height of requested view.
+    RETURNS width, height request should be in pixel units.
+    """
+    try:
+        width = float(request.GET.get("width"))
+        height = float(request.GET.get("height"))
+        return width, height
+    except:
+        return []
+
+def get_magnitude_bool(styles):
+    styles = get_style_list(request)
+    if styles:
+        return styles[6]
+    else:
+        return None   
