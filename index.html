@@ -27,7 +27,24 @@
         </ul>
       </header>
       <section>
-        <h4><a name="a-python-wms-service-for-geospatial-gridded-data" class="anchor" href="#a-python-wms-service-for-geospatial-gridded-data"><span class="octicon octicon-link"></span></a>Python Web Mapping Service (WMS) for visualizing geospatial data</h4>
+        <h3><a name="a-python-wms-service-for-geospatial-gridded-data" class="anchor" href="#a-python-wms-service-for-geospatial-gridded-data"><span class="octicon octicon-link"></span></a>Python Web Mapping Service (WMS) for visualizing geospatial data</h3>
+        <h4>Introduction</h4>
+        <ul>
+          <li>SCI-WMS is an open-source Python implementation of the (Web Mapping Service) API for oceanographic, atmospheric, climate and weather data.</li>
+          <li>Achieves real-time, on-demand visualization of externally hosted CF-compliant data.</li>
+          <li>Can visualize structured or unstructured grids adhering to CF and/or CF-UGRID conventions.</li>
+          <li>Abstracts each dataset into two objects: a topology and corresponding model data.</li>
+          <li>Topologies are stored locally for quick and efficient spatial queries.</li>
+          <li>Model data is hosted externally, subsetted data is downloaded and rendered per request.</li>
+          <li>Supports arbitrary cartographic projections.</li>
+        </ul>
+        <h4>Architecture Overview (COMT deployment)</h4>
+        <p><img src="img/architecture.png" /></p>
+        <ul>
+          <li>Grid topologies are cached using R-Tree structures for spatial access methods</li>
+          <li>Web-based WMS client demo displaying all datasets and available WMS layers</li>
+          <li>Secure administrator interface for dataset management</li>
+        </ul>
       </section>
       <footer>
         <p>COPYRIGHT 2010 RPS ASA</p>
