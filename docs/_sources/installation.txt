@@ -19,7 +19,7 @@ Prerequisites
 Download
 ========
 
-`download the latest release <https://github.com/asascience-open/sci-wms/releases>`_ and uncompress where you would like SCI-WMS to live
+`download the latest release <https://github.com/sci-wms/sci-wms/tree/comt>`_ where you would like SCI-WMS to live
 
 =======
 Install

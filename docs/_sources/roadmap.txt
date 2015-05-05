@@ -8,7 +8,7 @@ path, but due to time and budget constraints some enhancements and
 updates may take precedence over others.
 
 For discussion of problems and suggestions for new features: 
-`SCI-WMS GitHub project <https://github.com/asascience-open/sci-wms>`_.
+`SCI-WMS GitHub project <https://github.com/sci-wms/sci-wms>`_.
 
 ===================
 Current (|release|)
@@ -44,6 +44,6 @@ anything that is not supported will be considered a bug.
 Goals not assigned to a version
 ================================
 
-* `Support for CF Discrete Sampling Geometries <https://github.com/asascience-open/sci-wms/issues/65>`_
-* `Support for ROMS style staggered grid representations <https://github.com/asascience-open/sci-wms/issues/63>`_
-* `Support for native SWAN (non UGRID-CF) output <https://github.com/asascience-open/sci-wms/issues/62>`_
+* `Support for CF Discrete Sampling Geometries`_
+* `Support for ROMS style staggered grid representations`_
+* `Support for native SWAN (non UGRID-CF) output`_

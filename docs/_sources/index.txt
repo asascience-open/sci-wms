@@ -31,4 +31,4 @@ Features
 Issue Tracker
 =============
 
-`asascience-open/sci-wms GitHub issues <https://github.com/asascience-open/sci-wms/issues?state=open>`_
+`sci-wms/sci-wms GitHub issues <https://github.com/sci-wms/sci-wms/issues?state=open>`_
